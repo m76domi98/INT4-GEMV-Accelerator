@@ -21,14 +21,14 @@ def gemv_int(
     x_int: INT8 activation vector, each value in [-127, 127].
     m_rows: fixed-point requant multiplier M_r per output row.
     """
-    y_int = []
-    max_abs_acc = 0
-    saturations = 0
+    y_int = []  # one INT8 output per row, filled in below
+    max_abs_acc = 0  # biggest |acc| seen so far, to check it fits the accumulator
+    saturations = 0  # how many rows needed clipping after requant
     for row, m in zip(q_rows, m_rows):
-        acc = sum(map(operator.mul, row, x_int))
+        acc = sum(map(operator.mul, row, x_int))  # this row's dot product with x, exact int
         max_abs_acc = max(max_abs_acc, abs(acc))
-        y = (acc * m + REQUANT_ROUND) >> REQUANT_SHIFT
-        if not Y_MIN <= y <= Y_MAX:
+        y = (acc * m + REQUANT_ROUND) >> REQUANT_SHIFT  # scale by M_r, shift back down; the +ROUND makes the shift round instead of chop
+        if not Y_MIN <= y <= Y_MAX:  # outside INT8, so the clip below will kick in
             saturations += 1
-        y_int.append(min(max(y, Y_MIN), Y_MAX))
+        y_int.append(min(max(y, Y_MIN), Y_MAX))  # clamp to INT8, the RTL does the same saturate
     return y_int, max_abs_acc, saturations
