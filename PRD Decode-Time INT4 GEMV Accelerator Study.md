@@ -1,6 +1,6 @@
 # PRD: Decode-Time INT4 GEMV Accelerator Study
 
-**Owner:** Michelle · **Status:** Draft v1 · **Term:** One semester (about 10 weeks) · **Last updated:** 2026-10-09
+**Owner:** Michelle · **Status:** Draft v1 · **Term:** About 10 weeks · **Last updated:** 2026-10-09
 
 ## 1. Summary
 
@@ -42,8 +42,8 @@ The decision is fixed in Week 1. Candidates: output-stationary vs. weight-statio
 
 ## 7. Users and Audience
 
-- **Primary:** Michelle, completing the course project and building a portfolio artifact.
-- **Secondary:** course instructors, reviewers, and interviewers in hardware and ML systems roles.
+- **Primary:** Michelle, building a self-directed study and portfolio artifact.
+- **Secondary:** reviewers and interviewers in hardware and ML systems roles.
 
 ## 8. Functional Requirements
 
@@ -121,7 +121,7 @@ The decision is fixed in Week 1. Candidates: output-stationary vs. weight-statio
 - [ ] Which model and layer? (Decide by end of Week 1)
 - [ ] Which design decision? (Decide by end of Week 1)
 - [ ] Which synthesis target and board, if any?
-- [ ] Exact term start and end dates, and any co-op or course overlap?
+- [ ] Exact start and end dates, and any other commitments that overlap?
 
 ## 16. Future Work (Out of Scope)
 
