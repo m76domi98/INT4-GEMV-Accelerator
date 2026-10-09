@@ -1,6 +1,6 @@
 # Stage 1: Question, Model, Layer, Spec, Golden Model
 
-**Status:** In progress · **Weeks:** 1 · **Depends on:** Stage 0
+**Status:** Done (2026-10-09) · **Weeks:** 1 · **Depends on:** Stage 0
 **Exit criterion:** Golden model within the stated error bound of the float layer; spec written and dated before any RTL.
 **Spec date:** 2026-10-09. Sections marked *frozen* must not change after RTL starts. Changes go in a new dated section.
 
