@@ -14,11 +14,15 @@ endif
 
 include $(shell cocotb-config --makefiles)/Makefile.sim
 
-.PHONY: test export golden results
+.PHONY: test test-pe export golden results
 
 EXPORT_NPZ := export/out/layer15_up_proj.npz
 
 test: sim
+
+# Per-module targets. Each one overrides the toplevel, test module, and sources for that module.
+test-pe:
+	$(MAKE) sim TOPLEVEL=pe MODULE=test_pe VERILOG_SOURCES=rtl/pe.sv SIM_BUILD=sim_build/pe
 
 $(EXPORT_NPZ): export/export_layer.py
 	python3 export/export_layer.py
