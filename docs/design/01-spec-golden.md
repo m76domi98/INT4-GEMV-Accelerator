@@ -84,9 +84,9 @@ Random-sign sums grow like √K, not K, so measured error should sit well below 
 - [x] Numeric format table frozen
 - [x] Error bound formula frozen
 - [x] Predictions written
-- [ ] Versioned export script (FR2) with a shape check (expect [1536, 576]) and a known-output check
-- [ ] Golden model passes the error bound on the exported layer
-- [ ] Spec numeric values filled in (E_r, measured |acc|, saturation count)
+- [x] Versioned export script (FR2) with a shape check (expect [1536, 576]) and a known-output check
+- [x] Golden model passes the error bound on the exported layer
+- [x] Spec numeric values filled in (E_r, measured |acc|, saturation count)
 
 ## Verification
 
@@ -106,8 +106,26 @@ _Logged in [decision-log](../decision-log.md)._
 
 ## Results
 
-_Filled at exit._
+Source: `make golden` on 2026-10-09, log in `results/stage1_golden.log`. Model revision `93efa2f0`, s_x 0.0180745. Calibration: 118 vectors. Test: 57 vectors. Each vector has 1536 rows.
+
+| Metric | Per-channel (chosen) cal | Per-channel test | Per-tensor cal | Per-tensor test |
+| --- | --- | --- | --- | --- |
+| Max abs error | 0.811629 | 1.37576 | 1.7933 | 1.93254 |
+| RMSE | 0.0972273 | 0.104291 | 0.351412 | 0.357824 |
+| E_r min / median / max | 0.518948 / 3.17361 / 14.2691 | 0.517954 / 3.20019 / 13.9732 | 0.633072 / 11.7367 / 15.2173 | 0.625285 / 11.8769 / 14.9214 |
+| E_r violations (frozen bound) | 0 (min margin 0.509446) | 0 (min margin 0.510472) | 0 | 0 |
+| Violations with M term | 0 (M-term max 0.000977) | 0 (M-term max 0.000905) | 0 | 0 |
+| Max \|acc\| (budget 2^20) | 2518 (0.002) | 2220 (0.002) | 745 (0.001) | 788 (0.001) |
+| Requant saturations | 1084 | 1266 | 2 | 1 |
+| Activation clips | 0 | 0 | 0 | 0 |
+
+**Predictions checked (P1–P3 are checked here; P4 is Stage 6):**
+- **P1: PASS.** Per-channel max error 1.37576 vs. per-tensor 1.93254 on the test set. Over all vectors, per-channel max is 1.37576 and per-tensor is 1.93254. Correlation of the per-row gap with max|w_r| is −0.321 (predicted negative).
+- **P2: PASS.** Every vector's max error is below its worst-case E_r. Mean distance to the RMS form is 0.124, against 10.38 for the worst case, so the measured error is much closer to the RMS form.
+- **P3: PASS.** Max |acc| on calibration is 2518, below 2^17 = 131,072. This is well under the 18-bit prediction, and the spec keeps the 21-bit width.
+
+**Bound result:** the frozen E_r holds on every vector for both variants, including the vectors with saturations. The M_r term is tiny in practice (under 0.001 in output units), so it does not change the result.
 
 ## Surprises
 
-_Filled as they happen._
+- **Saturations on calibration data (2026-10-09).** The Numeric format notes predicted saturation would not trigger on calibrated data. Per-channel saturates 1084 times on calibration and 1266 on test. Per-tensor saturates 2 and 1 times. Probe on the exported arrays: the float output never exceeds 127 LSB on calibration, by construction. The golden output, computed from the quantized activations, overshoots by up to 50 LSB on 447 of 1536 rows. The M_r rounding moves the output by at most 0.52 LSB, so it is not the cause. The cause is activation quantization error. Per-channel sets each `s_out` to its own row's max, so any overshoot clips. Per-tensor has a larger `s_out` on most rows, so it has headroom. The clipped error is still inside the frozen E_r, since E_r has 0 violations. The frozen expectation was wrong and is kept as written. This is logged in the decision log.
