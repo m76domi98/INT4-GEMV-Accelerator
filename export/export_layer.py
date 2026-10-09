@@ -54,10 +54,12 @@ def check_known_output() -> None:
     # Hand-computed: s_r = [0.1, 0.05]; q = [[7, -3, 0], [-3, 1, 7]]
     assert q.tolist() == [[7, -3, 0], [-3, 1, 7]], f"weight codes {q.tolist()}"
     assert np.allclose(s_r, [0.1, 0.05]), f"row scales {s_r}"
-    # Hand-computed: integer dot products [1, 20]; float dot products [0.1, 1.05]
+    # Hand-computed: integer dot products [1, 20]; dequantized [0.1, 1.0]; float [0.1, 1.05]
     y_int = q.astype(np.int64) @ x_int  # int matmul, same thing the RTL will do
     assert y_int.tolist() == [1, 20], f"integer dot products {y_int.tolist()}"
-    assert np.allclose(s_r * y_int, w @ x_int), "dequantized output off the float reference"
+    # compare to the hand-computed dequantized values, not the float reference: quantization
+    # error is expected (row 1 is 1.0 vs 1.05), so exact equality with w @ x is the wrong check
+    assert np.allclose(s_r * y_int, [0.1, 1.0]), f"dequantized output {s_r * y_int}"
     print("known-output check: pass (q, s_r, dot products match hand computation)")
 
 
