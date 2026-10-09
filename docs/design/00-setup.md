@@ -1,6 +1,6 @@
 # Stage 0: Setup
 
-**Status:** Not started · **Weeks:** Setup (before Week 1) · **Depends on:** PRD Draft v1
+**Status:** In progress (fresh-clone check pending) · **Weeks:** Setup (before Week 1) · **Depends on:** PRD Draft v1
 **Exit criterion:** A clean checkout runs the test command and the export command, both with no manual steps.
 
 ## Goal
@@ -32,19 +32,20 @@ docs/           plan, design docs, decision log
 
 ## Deliverables
 
-- [ ] Repo skeleton with the layout above
-- [ ] Pinned dependencies and install steps (README)
-- [ ] `make test` runs cocotb with one passing smoke test
-- [ ] Decision log file present ([../decision-log.md](../decision-log.md))
-- [ ] First commit on `main`. The repo has no commits yet, so this is the first one.
+- [x] Repo skeleton with the layout above
+- [x] Pinned dependencies and install steps (README)
+- [x] `make test` runs cocotb with one passing smoke test (passes in WSL, Icarus 14.0, cocotb 1.9.2)
+- [x] Decision log file present ([../decision-log.md](../decision-log.md))
+- [ ] First commit on `main`. Setup is on `feat/stage-0-setup`; merge to `main` after the fresh-clone check.
 
 ## Verification
 
-- Fresh clone in a new directory, then install and `make test`. It must pass with no edits.
+- Fresh clone in a new directory, then install and `make test`. It must pass with no edits. **Not yet done.**
 
 ## Decisions
 
 - See decision-log rows dated 2026-10-09 for the synthesis-flow recommendation.
+- Simulator: Icarus Verilog 14.0 under WSL. Python 3.12 via uv. Logged in [decision-log](../decision-log.md).
 
 ## Risks
 

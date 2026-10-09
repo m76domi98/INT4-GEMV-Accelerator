@@ -7,7 +7,7 @@ This file turns the PRD milestones into stages. Each stage has a design doc in [
 
 | Stage | Weeks | Milestone (PRD §12) | Exit criterion | Design doc | Status |
 | --- | --- | --- | --- | --- | --- |
-| 0 | Setup | Repo, tooling, logs | Clean checkout builds and runs the test command | [00-setup](design/00-setup.md) | Not started |
+| 0 | Setup | Repo, tooling, logs | Clean checkout builds and runs the test command | [00-setup](design/00-setup.md) | In progress (fresh-clone check pending) |
 | 1 | 1 | Question, model, layer, spec | Golden model within error bound; spec written before RTL | [01-spec-golden](design/01-spec-golden.md) | Not started |
 | 2 | 2–3 | PE and array | Random and real-layer tests pass on a small tile | [02-pe-array](design/02-pe-array.md) | Not started |
 | 3 | 4 | Control and memory | Full layer runs in simulation, matches golden model | [03-control-memory](design/03-control-memory.md) | Not started |
