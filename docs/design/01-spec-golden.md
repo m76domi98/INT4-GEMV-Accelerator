@@ -1,7 +1,8 @@
 # Stage 1: Question, Model, Layer, Spec, Golden Model
 
-**Status:** Not started · **Weeks:** 1 · **Depends on:** Stage 0
+**Status:** In progress · **Weeks:** 1 · **Depends on:** Stage 0
 **Exit criterion:** Golden model within the stated error bound of the float layer; spec written and dated before any RTL.
+**Spec date:** 2026-10-09. Sections marked *frozen* must not change after RTL starts. Changes go in a new dated section.
 
 ## Goal
 
@@ -11,66 +12,97 @@ Freeze the question, the model, the layer, and the number formats. Write the gol
 
 - PRD §3 (research question), §6 (scope), §8 FR1–FR2, §15 (open questions)
 
-## Design
+## Decisions (frozen)
 
-### Open questions to close this week
+| Item | Decision | Source |
+| --- | --- | --- |
+| Model | **SmolLM2-135M** (HuggingFaceTB), Apache-2.0 | License read from the model card (`apache-2.0`) on 2026-10-09. Re-check before freezing. |
+| Architecture | Llama-style, SiLU gated MLP. `hidden_size` 576, `intermediate_size` 1536, 30 layers | `config.json` on 2026-10-09 |
+| Layer | `model.layers.15.mlp.up_proj`, weight shape **[1536, 576]** (out × in). Input K = 576, output N = 1536 | Middle layer of 30. Gate and down projections are out of scope. |
+| Design decision | **Per-channel requantization** (one scale per output row) vs. per-tensor as the comparison | PRD §3 candidates. Dataflow and accumulator width are not the variable under study. |
+| Synthesis | **Yosys + OpenROAD** | Free and scriptable. Confirm with the instructor, and switch to Vivado only if the course uses it. |
+| Board | None. Simulation and synthesis only | PRD §13 |
 
-- [ ] **Model.** Pick one small decoder-only model with a permissive license (Apache-2.0 or MIT). Record name, parameter count, and license. Verify the license on the model card; do not rely on this doc.
-- [ ] **Layer.** Recommend the FFN up-projection. It is the largest matrix in most small decoders, so bandwidth dominates more clearly than in Q.
-- [ ] **Design decision.** See the recommendation below.
-- [ ] **Synthesis target.** See [05-synthesis](05-synthesis.md).
+**Why this layer:** the up-projection has the most weight bytes per token among the MLP matrices in this model, so it is the clearest test of the memory-bound regime (PRD §2).
 
-### Recommended design decision: per-channel vs. per-tensor requantization
+**Why a smaller model:** the export, golden model, and cocotb runs must iterate quickly on a laptop. SmolLM2-135M's 1536×576 matrix is about 0.9M weights, which is small enough for full-layer simulation.
 
-Dataflow is a weak choice for this study. In GEMV with batch 1, every weight is used exactly once per token, so output-stationary and weight-stationary differ mostly in where partial sums sit, not in reuse. Accumulator width changes overflow behavior but gives little to analyze.
+**Why per-channel requantization:** it is the standard choice in practice. Per-tensor scales are set by the global maximum, which leaves rows with small weights with few quantization levels. That gives an error pattern across rows to analyze (G3). The cost is one scale per row, 1536 entries.
 
-Per-channel vs. per-tensor requantization is a better fit:
-
-- It directly serves G3 (error by row and by outlier channel). Per-tensor scales hide the rows that matter.
-- The hardware cost is small: one scale per output row, stored in a small memory, versus one global scale.
-- Both variants share the same datapath, so the area and fmax comparison in Stage 5 isolates the scale path.
-
-If the team prefers dataflow, the study still works, but the analysis in Stage 6 gets thinner. Record the final choice here and in the decision log.
-
-### Numeric format (to fill and freeze)
+## Numeric format (frozen)
 
 | Item | Value | Notes |
 | --- | --- | --- |
-| Activation | signed INT8 | Per-tensor scale, chosen from calibration data |
-| Weight | signed INT4 | Symmetric; state group size if grouped |
-| Accumulator | TBD | Check the worst case: K × 127 × 7 bits plus margin |
-| Requantization | TBD | Scale, rounding mode, saturation range |
-| Output | INT8 (or wider) | State the format |
-| Error bound | TBD | Golden vs. float; set before measuring |
+| Activation | signed INT8, symmetric, **per-tensor** | `s_x = max|x_cal| / 127`. `x_int = clamp(round(x / s_x), -127, 127)`. |
+| Weight | signed INT4, symmetric, **per output row** | `s_r = max_i |w_ri| / 7`. `q = clamp(round(w / s_r), -8, 7)`. Full range [-8, 7] is used in the datapath. |
+| Product | at most 127 × 8 = **1016** in magnitude | Bounds the accumulator |
+| Accumulator | **signed 21-bit**. K = 576 gives worst case 1016 × 576 = **585,216**. 21-bit range is ±1,048,575 | Worst-case width, fixed for the spec. The real-weight check is in Predictions. |
+| Requantization | `acc_int` to INT8 output using fixed-point multiplier `M_r` and shift 15 | `M_r = round(s_x · s_r / s_out_r · 2^15)`. Golden: `y = clamp(((acc · M_r) + 2^14) >> 15, -128, 127)`. |
+| Output scale | `s_out_r = max_cal |y_float_r| / 127`, per row | Calibrated on the same calibration set as `s_x`. |
+| Output | signed INT8 | Dequantized output is `y_int · s_out_r`. |
 
-### Golden model
+Notes:
+- Integer ops only inside the golden datapath. The float reference lives outside it.
+- `M_r` is 16 bits or less in practice. The exact multiplier width is a Stage 3 hardware detail. The golden model defines the arithmetic now, so RTL must match it bit for bit.
+- Saturation should not trigger on calibrated data. Count saturations in the golden run and report the count.
+
+## Error bound (predicted, frozen)
+
+The reference is the float matmul `y_r = Σ_i w_ri · x_i` with float weights and float input. Let `ŵ` and `x̂` be the dequantized values.
+
+Three terms bound `|ŷ_r − y_r|`:
+
+1. **Weight rounding:** `E_w,r = (s_r / 2) · Σ_i |x̂_i|`. Each weight error is at most `s_r / 2`.
+2. **Activation rounding:** `E_x,r = (s_x / 2) · Σ_i |ŵ_ri|`.
+3. **Requantization:** `E_rq,r = s_out_r / 2`, plus any saturation (expected 0).
+
+Total: `E_r = E_w,r + E_x,r + E_rq,r`.
+
+Worst-case closed form, using `|x̂_i| ≤ 127 · s_x` and `|ŵ| ≤ 8 · s_r`:
+`E_r ≤ K · 127 · s_x · s_r / 2 + K · 8 · s_r · s_x / 2 + s_out_r / 2`.
+
+**Acceptance:** golden output vs. float reference, per row, is within `E_r` on every calibration and test vector. Report the numeric values of `E_r` once the export runs. The formula is fixed now.
+
+Random-sign sums grow like √K, not K, so measured error should sit well below this worst case. The RMS form is `E_w,rms = s_r · √(K/12) · rms(x̂)` and is the more realistic comparison.
+
+## Predictions (Week 1, frozen before measuring)
+
+- **P1.** Per-channel max abs error is less than or equal to per-tensor max abs error on the same layer. The gap is largest on rows with small `max|w|`.
+- **P2.** Measured max error is below the worst-case `E_r` on every vector. It sits closer to the RMS form than to the worst case.
+- **P3.** The real-weight accumulator fits in **18 bits** signed (|acc| < 131,072) on the calibration inputs, because sums grow like √K. The spec still uses 21 bits.
+- **P4.** Predicted results are checked in Stage 6. Any wrong prediction goes in the surprise log with an explanation.
+
+## Golden model
 
 - Pure Python integer arithmetic. No NumPy floats inside the datapath.
-- Input: exported weights and activation vectors (FR2). Output: integer vector plus the float reference.
-- Report: max abs error, RMSE, and per-row error. These feed G3 later.
+- Input: exported weights, `s_x`, `s_r`, `M_r`, and activation vectors (FR2). Output: integer vector, plus the float reference for comparison.
+- Report: max abs error, RMSE, per-row error, saturation count, and the measured max `|acc|` against 2^20. P3 is checked here.
 
 ## Deliverables
 
-- [ ] Model and layer recorded in this doc
-- [ ] Numeric format table frozen
-- [ ] Versioned export script (FR2) with a shape check and a known-output check
+- [x] Model and layer recorded (see Decisions)
+- [x] Numeric format table frozen
+- [x] Error bound formula frozen
+- [x] Predictions written
+- [ ] Versioned export script (FR2) with a shape check (expect [1536, 576]) and a known-output check
 - [ ] Golden model passes the error bound on the exported layer
-- [ ] **Spec file with predicted results**, dated, and not edited after RTL starts (Working Agreement)
+- [ ] Spec numeric values filled in (E_r, measured |acc|, saturation count)
 
 ## Verification
 
-- Shape check: exported matrix shape matches the model config.
+- Shape check: exported matrix shape is [1536, 576], which matches `config.json`.
 - Known-output check: run one hand-computed vector through the export path (PRD §13, transposed-weight risk).
 - Bound check: golden vs. float on every exported activation vector.
 
 ## Decisions
 
-_Log in [decision-log](../decision-log.md)._
+_Logged in [decision-log](../decision-log.md)._
 
 ## Risks
 
 - Transposed or wrong-layout weights (PRD §13). Mitigation: the known-output check above.
-- Error bound too loose to mean anything. Mitigation: set it from the INT8 and INT4 rounding budget before measuring.
+- Error bound too loose to mean anything. Mitigation: the formula is fixed above and derived from the rounding budget.
+- Layer 15 is unrepresentative. Mitigation: it is fixed now. Do not switch layers. Note the choice in the report's limitations.
 
 ## Results
 

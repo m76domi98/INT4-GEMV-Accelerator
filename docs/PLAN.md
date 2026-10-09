@@ -37,7 +37,7 @@ Two gates can change the plan. Decide them on the date, not later.
 
 These are due by the end of Week 1 unless noted. Each one is tracked in [01-spec-golden](design/01-spec-golden.md).
 
-- [ ] Which model and layer? (Week 1)
-- [ ] Which design decision? (Week 1)
-- [ ] Which synthesis target and board, if any? (Week 1, see recommendation in [05-synthesis](design/05-synthesis.md))
-- [ ] Exact term start and end dates, and any co-op or course overlap?
+- [x] Which model and layer? SmolLM2-135M, `layers.15.mlp.up_proj` (see [01-spec-golden](design/01-spec-golden.md))
+- [x] Which design decision? Per-channel vs. per-tensor requantization
+- [x] Which synthesis target and board, if any? Yosys + OpenROAD, no board. Instructor confirmation still pending ([05-synthesis](design/05-synthesis.md))
+- [ ] Exact term start and end dates, and any co-op or course overlap? (Not strict; schedule stays week-based until this is known)
