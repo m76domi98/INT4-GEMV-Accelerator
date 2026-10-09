@@ -84,13 +84,14 @@ async def corner_body(dut, x, w):
 
 
 def make_corner_test(x, w):
-    """Build one named cocotb test per corner. cocotb needs a separate Test object for each name."""
+    """Build one named cocotb test per corner. cocotb 1.9 reports the test name from __qualname__."""
 
-    @cocotb.test(name=case_name(x, w))
     async def corner_test(dut):
         await corner_body(dut, x, w)
 
-    return corner_test
+    corner_test.__name__ = case_name(x, w)
+    corner_test.__qualname__ = case_name(x, w)
+    return cocotb.test()(corner_test)
 
 
 for _x in X_VALUES:
