@@ -14,3 +14,4 @@ Types: **decision** (a choice made), **surprise** (something that did not match 
 | 2026-10-09 | 1 | decision | Requant: per-channel as the variant, per-tensor as the comparison. Fixed-point `M_r` with shift 15 | Standard in practice; error analysis needs per-row variation | Stage 1 freeze |
 | 2026-10-09 | 1 | decision | Accumulator: signed 21-bit, from worst case 1016 × 576 = 585,216 | Worst-case width fixed for the spec. Narrower width checked against real weights in Stage 6 (prediction P3: 18 bits) | Stage 6 |
 | 2026-10-09 | 5 | decision | Synthesis: Yosys + OpenROAD, pending instructor check | Free and scriptable. Vivado only if the course requires it | Week 2 (instructor reply) |
+| 2026-10-09 | 5 | decision | Supersedes the row above: Synthesis is Yosys + OpenROAD with no instructor check. Vivado only if already installed | Project is self-directed, not a course project, so no course requirement applies | Stage 5 start |

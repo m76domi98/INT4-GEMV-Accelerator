@@ -20,7 +20,7 @@ Freeze the question, the model, the layer, and the number formats. Write the gol
 | Architecture | Llama-style, SiLU gated MLP. `hidden_size` 576, `intermediate_size` 1536, 30 layers | `config.json` on 2026-10-09 |
 | Layer | `model.layers.15.mlp.up_proj`, weight shape **[1536, 576]** (out × in). Input K = 576, output N = 1536 | Middle layer of 30. Gate and down projections are out of scope. |
 | Design decision | **Per-channel requantization** (one scale per output row) vs. per-tensor as the comparison | PRD §3 candidates. Dataflow and accumulator width are not the variable under study. |
-| Synthesis | **Yosys + OpenROAD** | Free and scriptable. Confirm with the instructor, and switch to Vivado only if the course uses it. |
+| Synthesis | **Yosys + OpenROAD** | Free and scriptable. Vivado is a fallback only if it is already installed. |
 | Board | None. Simulation and synthesis only | PRD §13 |
 
 **Why this layer:** the up-projection has the most weight bytes per token among the MLP matrices in this model, so it is the clearest test of the memory-bound regime (PRD §2).

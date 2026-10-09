@@ -16,7 +16,7 @@ Measure area and fmax for each variant. PRD G4, FR9.
 
 ### Synthesis target: recommendation
 
-Use **Yosys + OpenROAD** if the course allows it. Both are open-source and scriptable, so the flow runs from a clean checkout (PRD §9). Vivado is fine if it is already installed and the course requires it. Record the final choice in the decision log.
+Use **Yosys + OpenROAD**. Both are open-source and scriptable, so the flow runs from a clean checkout (PRD §9). Vivado is fine if it is already installed. Record the final choice in the decision log.
 
 - Constraints file with one target clock. The PRD allows relaxing it if timing fails; report the achieved fmax, not the target.
 - Area: cell count and, where the flow reports it, post-place area. State which one.
