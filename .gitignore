@@ -11,6 +11,13 @@ __pycache__/
 .venv/
 venv/
 
+# Exported weights and activations are rebuilt by make export.
+# Keep the small manifest (model revision, scales, versions) as the record.
+export/out/*
+!export/out/manifest.json
+
 # Generated results are rebuilt by make results; keep only the .gitkeep
+# and the Stage 1 golden log, which the spec cites.
 results/*
 !results/.gitkeep
+!results/stage1_golden.log

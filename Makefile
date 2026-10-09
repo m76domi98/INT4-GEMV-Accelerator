@@ -14,12 +14,19 @@ endif
 
 include $(shell cocotb-config --makefiles)/Makefile.sim
 
-.PHONY: test export results
+.PHONY: test export golden results
+
+EXPORT_NPZ := export/out/layer15_up_proj.npz
 
 test: sim
 
-export:
-	@echo "make export: not implemented yet (Stage 1, export/)" && exit 1
+$(EXPORT_NPZ): export/export_layer.py
+	python3 export/export_layer.py
+
+export: $(EXPORT_NPZ)
+
+golden: $(EXPORT_NPZ)
+	python3 model/check_golden.py | tee results/stage1_golden.log
 
 results:
 	@echo "make results: not implemented yet (Stage 6, results/)" && exit 1

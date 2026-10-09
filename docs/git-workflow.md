@@ -13,7 +13,7 @@ git checkout -b <type>/<short-name>     # for example: feat/pe-tile, docs/stage-
 ## 2. Decide, then build
 
 - Write or update the design doc for the stage first (see [PLAN.md](PLAN.md) working agreements).
-- Make small commits as you go, using `<type>: <description>` (types: feat, fix, refactor, docs, test, chore, perf, ci).
+- Make small commits as you go. Messages are short and informal, one line, lowercase is fine: `fix typo in testbench`, `shit link that`. No conventional-commit prefixes, no drafted bodies. Commit early and often, messy is fine.
 - Log decisions and surprises in [decision-log.md](decision-log.md) the same day.
 
 ## 3. Review before merging
