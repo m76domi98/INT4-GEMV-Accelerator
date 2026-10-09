@@ -16,12 +16,13 @@ docs/     plan, design docs, decision log
 
 ## Setup
 
-Python 3.11 or newer, plus a simulator. Icarus Verilog is the default; Verilator also works (`make test SIM=verilator`).
+Python 3.12 is required. The pinned torch 2.5.1 has no Python 3.14 build, so a newer default Python will fail to install. A simulator is also needed: Icarus Verilog is the default, and Verilator also works (`make test SIM=verilator`). Icarus is tested on Linux (WSL).
 
 ```bash
-python -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+make test
 ```
 
 ## Commands
