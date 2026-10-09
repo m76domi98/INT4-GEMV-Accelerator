@@ -10,7 +10,7 @@ Make the repo reproducible before any design work starts. PRD §9 requires one c
 ## Inputs
 
 - [PRD](../../PRD%20Decode-Time%20INT4%20GEMV%20Accelerator%20Study.md) §9, §14
-- Tools: Python, PyTorch or Hugging Face Transformers, cocotb, Icarus or Verilator, Yosys/OpenROAD (or Vivado)
+- Tools: Python, PyTorch or Hugging Face Transformers, cocotb, Icarus or Verilator, Yosys/OpenROAD (or Vivado).
 
 ## Design
 
