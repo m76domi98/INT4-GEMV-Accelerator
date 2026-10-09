@@ -11,6 +11,9 @@ __pycache__/
 .venv/
 venv/
 
+# Exported weights and activations are rebuilt by make export
+export/out/
+
 # Generated results are rebuilt by make results; keep only the .gitkeep
 results/*
 !results/.gitkeep
