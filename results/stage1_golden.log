@@ -1,0 +1,45 @@
+layer model.layers.15.mlp.up_proj revision 93efa2f097d58c2a74874c7e644dbc9b0cee75a2 s_x 0.0180745
+
+== per-channel (chosen) ==
+[cal] vectors=118 rows=1536
+  max abs err      0.811629
+  RMSE             0.0972273
+  E_r min/med/max  0.518948 / 3.17361 / 14.2691
+  E_r violations   0 (min margin 0.509446)
+  violations w/ M  0 (M-term max 0.000977294)
+  max |acc|        2518 (0.002 of 2^20)
+  requant sats     1084; activation clips 0
+[test] vectors=57 rows=1536
+  max abs err      1.37576
+  RMSE             0.104291
+  E_r min/med/max  0.517954 / 3.20019 / 13.9732
+  E_r violations   0 (min margin 0.510472)
+  violations w/ M  0 (M-term max 0.000904784)
+  max |acc|        2220 (0.002 of 2^20)
+  requant sats     1266; activation clips 0
+
+== per-tensor (comparison) ==
+[cal] vectors=118 rows=1536
+  max abs err      1.7933
+  RMSE             0.351412
+  E_r min/med/max  0.633072 / 11.7367 / 15.2173
+  E_r violations   0 (min margin 0.576622)
+  violations w/ M  0 (M-term max 3.03951e-05)
+  max |acc|        745 (0.001 of 2^20)
+  requant sats     2; activation clips 0
+[test] vectors=57 rows=1536
+  max abs err      1.93254
+  RMSE             0.357824
+  E_r min/med/max  0.625285 / 11.8769 / 14.9214
+  E_r violations   0 (min margin 0.575116)
+  violations w/ M  0 (M-term max 3.21494e-05)
+  max |acc|        788 (0.001 of 2^20)
+  requant sats     1; activation clips 0
+
+== Predictions ==
+P1 max abs err: per-channel 1.37576 vs per-tensor 1.93254 -> PASS
+P1 (gap vs max|w_r|, predicted negative): corr = -0.321
+P2 max err below worst-case E_r on every vector: PASS
+P2 closer to RMS form than worst case (mean |meas-RMS| 0.124115 vs mean |meas-worst| 10.3819): PASS
+P3 real-weight max |acc| on calibration 2518 vs 2^17 = 131072: PASS
+P3 test-set max |acc| 2220
