@@ -1,0 +1,16 @@
+# Simulator build output (cocotb, Icarus, Verilator)
+sim_build/
+results.xml
+*.vcd
+*.fst
+obj_dir/
+__pycache__/
+*.pyc
+
+# Local virtual environments
+.venv/
+venv/
+
+# Generated results are rebuilt by make results; keep only the .gitkeep
+results/*
+!results/.gitkeep

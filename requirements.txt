@@ -1,0 +1,5 @@
+# Pinned Python dependencies. Install with: pip install -r requirements.txt
+cocotb==1.9.2
+numpy==2.1.3
+torch==2.5.1
+transformers==4.46.3
