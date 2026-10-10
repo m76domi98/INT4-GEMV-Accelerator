@@ -22,6 +22,8 @@ W_BITS = 4
 NPZ_PATH = Path(__file__).resolve().parents[1] / "export" / "out" / "layer15_up_proj.npz"
 RANDOM_SEED = 3  # fixed so a failure reproduces
 RANDOM_RUNS = 20
+REAL_LAYER_SPLITS = ("x_cal_int", "x_test_int")  # calibration vectors and held-out test vectors from the export
+REAL_LAYER_ROW_STEP = 64  # every 64th of the 1,536 rows: 24 rows, 6 tile runs of 4
 CLOCK_PERIOD_NS = 10
 
 
@@ -114,17 +116,54 @@ async def done_pulses_once_and_acc_holds(dut):
     assert accs == final, f"acc moved while idle: before={final}, after={accs}"
 
 
+def sampled_row_groups(total_rows):
+    """Every REAL_LAYER_ROW_STEP-th row, cut into groups of TILE_ROWS. Each group is one tile run."""
+    rows = list(range(0, total_rows, REAL_LAYER_ROW_STEP))
+    assert len(rows) % TILE_ROWS == 0, f"{len(rows)} sampled rows does not split into tiles of {TILE_ROWS}"
+    return [rows[i:i + TILE_ROWS] for i in range(0, len(rows), TILE_ROWS)]
+
+
 @cocotb.test()
 async def tile_real_layer(dut):
-    """Rows 0..TILE_ROWS-1 of q_pc, run on every calibration vector in the export, bit-exact."""
+    """Sampled rows of q_pc, run on the calibration and held-out vectors, bit-exact. A sample, not all 1,536 rows."""
     await start_clock(dut)
     data = np.load(NPZ_PATH)
-    q_rows = data["q_pc"][:TILE_ROWS].astype(int).tolist()
-    x_vectors = data["x_cal_int"].astype(int).tolist()
-    assert len(q_rows[0]) == K, f"layer K is {len(q_rows[0])}, TILE_K is {K}"
-    x_all = np.array(x_vectors)
-    assert -127 <= x_all.min() and x_all.max() <= 127, "activation outside [-127, 127] (golden.py contract)"
-    for v, xs in enumerate(x_vectors):
-        expected = raw_acc(q_rows, xs)
-        got = await run_tile(dut, xs, q_rows)
-        assert got == expected, f"calibration vector {v}: expected {expected}, got {got}"
+    q_all = data["q_pc"].astype(int)
+    assert q_all.shape[1] == K, f"layer K is {q_all.shape[1]}, TILE_K is {K}"
+    for split in REAL_LAYER_SPLITS:
+        x_vectors = data[split].astype(int).tolist()
+        x_all = np.array(x_vectors)
+        assert -127 <= x_all.min() and x_all.max() <= 127, f"{split}: activation outside [-127, 127] (golden.py contract)"
+        for group in sampled_row_groups(q_all.shape[0]):
+            q_rows = q_all[group].tolist()
+            for v, xs in enumerate(x_vectors):
+                expected = raw_acc(q_rows, xs)
+                got = await run_tile(dut, xs, q_rows)
+                assert got == expected, f"{split} rows {group} vector {v}: expected {expected}, got {got}"
+
+
+@cocotb.test()
+async def missing_clr_accumulates_and_drops_done(dut):
+    """Driver contract, documented: a row set whose term 0 has clr=0 is not detected by the tile.
+
+    The tile keeps the previous acc and the previous term count. The bad row set accumulates into the
+    old sum, and done does not fire at its Kth term. This test pins that behavior, so it cannot change
+    without a test failing. Stage 3 control must keep clr on term 0 and add a sticky error flag.
+    """
+    await start_clock(dut)
+    rng = random.Random(RANDOM_SEED + 1)
+    q_a = [[rng.randint(-8, 7) for _ in range(K)] for _ in range(TILE_ROWS)]
+    xs_a = [rng.randint(-127, 127) for _ in range(K)]
+    q_b = [[rng.randint(-8, 7) for _ in range(K)] for _ in range(TILE_ROWS)]
+    xs_b = [rng.randint(-127, 127) for _ in range(K)]
+
+    good = await run_tile(dut, xs_a, q_a)  # good row set first, done fires at its Kth term
+    assert good == raw_acc(q_a, xs_a), "good row set is wrong before the bad one even starts"
+
+    for i, x in enumerate(xs_b):  # bad row set: clr stays low on term 0
+        await send_term(dut, x, [row[i] for row in q_b], clr=False)
+    accs, done = await read_tile(dut)
+
+    expected_sum = [a + b for a, b in zip(raw_acc(q_a, xs_a), raw_acc(q_b, xs_b))]
+    assert accs == expected_sum, f"missing clr: expected accumulate into old sum {expected_sum}, got {accs}"
+    assert done == 0, "missing clr: done fired at the end of the bad row set, behavior changed"
