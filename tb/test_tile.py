@@ -22,6 +22,8 @@ W_BITS = 4
 NPZ_PATH = Path(__file__).resolve().parents[1] / "export" / "out" / "layer15_up_proj.npz"
 RANDOM_SEED = 3  # fixed so a failure reproduces
 RANDOM_RUNS = 20
+GAP_MAX = 3  # up to 3 idle cycles between accepted terms
+GAP_RUNS = 5  # row sets in a row, each restarted with clr, each with its own random gaps
 REAL_LAYER_SPLITS = ("x_cal_int", "x_test_int")  # calibration vectors and held-out test vectors from the export
 REAL_LAYER_ROW_STEP = 64  # every 64th of the 1,536 rows: 24 rows, 6 tile runs of 4
 CLOCK_PERIOD_NS = 10
@@ -104,6 +106,25 @@ async def tile_random(dut):
 
 
 @cocotb.test()
+async def gaps_hold_acc_and_done_follows_accepted_terms(dut):
+    """Random idle gaps inside each row set, several row sets in a row, each restarted with clr. Bit-exact.
+
+    Covers the memory-side case: the tile must hold acc through gaps, and the clr restart must reset
+    both the sum and the term count, so done lands on the Kth accepted term of every row set.
+    """
+    await start_clock(dut)
+    rng = random.Random(RANDOM_SEED + 2)
+    for run in range(GAP_RUNS):
+        q_rows = [[rng.randint(-8, 7) for _ in range(K)] for _ in range(TILE_ROWS)]
+        xs = [rng.randint(-127, 127) for _ in range(K)]
+        expected = raw_acc(q_rows, xs)
+        got = await run_row_set_with_gaps(dut, xs, q_rows, rng)
+        assert got == expected, f"gap run {run}: expected {expected}, got {got}"
+        for _ in range(rng.randint(1, GAP_MAX)):  # idle between row sets, then the next one starts with clr
+            await gap_cycle(dut, rng)
+
+
+@cocotb.test()
 async def done_pulses_once_and_acc_holds(dut):
     """After done, one idle cycle drops done, and acc stays at its final value."""
     await start_clock(dut)
@@ -114,6 +135,36 @@ async def done_pulses_once_and_acc_holds(dut):
     accs, done = await read_tile(dut)
     assert done == 0, "done still high one cycle after the last term"
     assert accs == final, f"acc moved while idle: before={final}, after={accs}"
+
+
+async def gap_cycle(dut, rng):
+    """One cycle with in_valid low and random junk on x and w. The tile must ignore all of it."""
+    await FallingEdge(dut.clk)
+    dut.in_valid.value = 0
+    dut.clr.value = 0
+    dut.x.value = rng.randint(-128, 127) & 0xFF
+    dut.w.value = rng.randint(0, 15)
+    await RisingEdge(dut.clk)
+
+
+async def run_row_set_with_gaps(dut, xs, q_rows, rng):
+    """One row set of K accepted terms, with random idle gaps before each term after the first.
+
+    After every gap cycle, acc must not move and done must be low. done must be high exactly
+    after the Kth accepted term, however many gap cycles came before it.
+    """
+    accs = None
+    for i, x in enumerate(xs):
+        if i > 0:
+            for _ in range(rng.randint(0, GAP_MAX)):
+                await gap_cycle(dut, rng)
+                gap_accs, gap_done = await read_tile(dut)
+                assert gap_done == 0, f"term {i}: done high during a gap"
+                assert gap_accs == accs, f"term {i}: acc moved during a gap, before={accs}, after={gap_accs}"
+        await send_term(dut, x, [row[i] for row in q_rows], clr=(i == 0))
+        accs, done = await read_tile(dut)
+        assert done == int(i == K - 1), f"term {i}: done={done}, expected {int(i == K - 1)}"
+    return accs
 
 
 def sampled_row_groups(total_rows):

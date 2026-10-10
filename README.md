@@ -33,7 +33,7 @@ make test
 | `make export` | Exports the pinned SmolLM2 layer's weights and activations to `export/out/` (needs the model in the Hugging Face cache or network access) | Stage 1 |
 | `make golden` | Runs the golden check and writes `results/stage1_golden.log` | Stage 1 |
 | `make test-pe` | PE cocotb tests: 84 cases, corner grid, worst case, random, hold | Stage 2, Icarus only |
-| `make test-tile` | Tile cocotb tests: random, done and hold, sampled real-layer rows on both splits, missing-`clr` contract. Needs `make export` first | Stage 2, Icarus only |
+| `make test-tile` | Tile cocotb tests: random, done and hold, idle gaps between terms, sampled real-layer rows on both splits, missing-`clr` contract. Needs `make export` first | Stage 2, Icarus only |
 | `make results` | Regenerates tables, plots, and logs | Stage 6 (not implemented) |
 
 ### Full regression
