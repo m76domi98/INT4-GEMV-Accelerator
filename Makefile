@@ -28,7 +28,7 @@ test-pe:
 TILE_ROWS ?= 4
 TILE_K ?= 576
 test-tile:
-	TILE_ROWS=$(TILE_ROWS) TILE_K=$(TILE_K) $(MAKE) sim TOPLEVEL=pe_tile MODULE=test_tile VERILOG_SOURCES="rtl/pe.sv rtl/pe_tile.sv" SIM_BUILD=sim_build/pe_tile COMPILE_ARGS="-g2012 -Ppe_tile.TILE_ROWS=$(TILE_ROWS) -Ppe_tile.K=$(TILE_K)"
+	TILE_ROWS=$(TILE_ROWS) TILE_K=$(TILE_K) COMPILE_ARGS="-Ppe_tile.TILE_ROWS=$(TILE_ROWS) -Ppe_tile.K=$(TILE_K)" $(MAKE) sim TOPLEVEL=pe_tile MODULE=test_tile VERILOG_SOURCES="rtl/pe.sv rtl/pe_tile.sv" SIM_BUILD=sim_build/pe_tile
 
 $(EXPORT_NPZ): export/export_layer.py
 	python3 export/export_layer.py
