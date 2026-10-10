@@ -32,6 +32,19 @@ Wrap the tile in control and storage so one full layer runs per run. PRD FR5, FR
 - `REQUANT`: the four tile accumulators go through the requant module, one per tile row. Outputs go to the output buffer.
 - `DONE`: a single-cycle `done` pulse, with the output buffer valid.
 
+**Interface of `rtl/layer_ctrl.sv` (as built for the test).**
+- Control: `clk`, `rst` (synchronous), `start` (pulse in IDLE), `load_done` (ends LOAD).
+- Load writes, accepted in LOAD only: `w_we/w_addr[17:0]/w_wdata[15:0]` (word index g·K + t), `m_we/m_addr[10:0]/m_wdata[15:0]`, `x_we/x_addr[9:0]/x_wdata[7:0]`.
+- Output: `out_raddr[10:0]` → `out_rdata[7:0]` (combinational read of the output buffer), `layer_done` (one cycle), `err_sticky`, `sat_count[10:0]`, `compute_cycles[31:0]`, `load_cycles[31:0]`.
+- Probes for the test: `t_valid`, `t_clr`, `t_x[7:0]`, `t_w[15:0]`, the term the tile samples on the next edge.
+- Reads go through a `READ_LAT`-deep pipeline after the address. The tile sees the piped values.
+
+**Deviations from the FSM above, made while writing the test (2026-10-10):**
+- No `WRITE` state. Each group's four results go to the output buffer in `REQUANT`, one row per cycle.
+- `COMPUTE` issues the K terms of a group, then waits for the control's own `expect_done`, not the tile's `done`. The FSM advances on the control's expectation, so a fault that stops `done` from firing cannot hang the run. The sticky check reports it.
+- Reset does not clear the memories. Every run rewrites every word, and clearing 221k words on reset is wasted simulation time. The run's correctness does not depend on the old contents.
+- `sat_count` is cleared by `start` and by `rst`, not on every idle cycle. Clearing it while idle would wipe the count before the testbench reads it.
+
 **Requantization module (`rtl/requant.sv`).** Separate from the control, so it can be tested alone.
 - Interface and arithmetic match `gemv_int` exactly: `y = clamp((acc × M_r + 2^14) >>> 15, -128, 127)`.
 - Inputs: `acc` (21-bit signed), `m` (16-bit signed). Output: `y` (INT8).
