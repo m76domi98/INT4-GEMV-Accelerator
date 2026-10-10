@@ -92,7 +92,7 @@ async def watch_terms(dut, x_row, words, errors, progress):
     progress["terms"] counts the accepted terms seen, so run_layer can tell a short run from a long one.
     """
     group = term = 0
-    while group < GROUPS:
+    while group < GROUPS and not progress.get("stop"):
         await FallingEdge(dut.clk)
         if not int(dut.t_valid.value):
             continue
@@ -147,8 +147,9 @@ async def run_layer(dut, layer, x_row):
         "err_sticky": int(dut.err_sticky.value),
         "y": await read_out(dut),
     }
-    # A DUT that finishes early never completes the term stream. Stop the monitor and report the shortfall.
-    monitor.cancel()
+    # A DUT that finishes early never completes the term stream. Stop the monitor at its next edge and report the shortfall.
+    progress["stop"] = True
+    await monitor
     if progress["terms"] != WORDS:
         errors.append(f"control presented {progress['terms']} terms, expected {WORDS}")
     result["errors"] = errors
