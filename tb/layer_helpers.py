@@ -84,11 +84,12 @@ async def drive_load(dut, writes):
     dut.load_done.value = 0
 
 
-async def watch_terms(dut, x_row, words, errors):
+async def watch_terms(dut, x_row, words, errors, progress):
     """Check every term the control presents to the tile against the expected stream.
 
     Sampled on the falling edge, so the values are the ones the tile takes on the next rising edge.
     Expected: clr on term 0 of each group only, the activation x[t], and the packed weight word for (group, t).
+    progress["terms"] counts the accepted terms seen, so run_layer can tell a short run from a long one.
     """
     group = term = 0
     while group < GROUPS:
@@ -100,6 +101,7 @@ async def watch_terms(dut, x_row, words, errors):
             got = int(getattr(dut, name).value)
             if got != want and len(errors) < MAX_REPORTED_ERRORS:
                 errors.append(f"group {group} term {term} {name}: expected {want}, got {got}")
+        progress["terms"] += 1
         term += 1
         if term == K:
             term = 0
@@ -120,13 +122,14 @@ async def run_layer(dut, layer, x_row):
     """Reset, load, run one layer, and read back everything the tests compare. Returns a dict."""
     await reset(dut)
     errors = []
+    progress = {"terms": 0}
     started = time.perf_counter()
 
     await FallingEdge(dut.clk)
     dut.start.value = 1
     await FallingEdge(dut.clk)
     dut.start.value = 0
-    monitor = cocotb.start_soon(watch_terms(dut, x_row, layer["words"], errors))
+    monitor = cocotb.start_soon(watch_terms(dut, x_row, layer["words"], errors, progress))
 
     await drive_load(dut, load_writes(layer, x_row))
 
@@ -144,7 +147,10 @@ async def run_layer(dut, layer, x_row):
         "err_sticky": int(dut.err_sticky.value),
         "y": await read_out(dut),
     }
-    await monitor
+    # A DUT that finishes early never completes the term stream. Stop the monitor and report the shortfall.
+    monitor.cancel()
+    if progress["terms"] != WORDS:
+        errors.append(f"control presented {progress['terms']} terms, expected {WORDS}")
     result["errors"] = errors
     result["wall_s"] = time.perf_counter() - started
     return result
