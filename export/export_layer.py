@@ -14,6 +14,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 SCRIPT_VERSION = "1"
 MODEL_ID = "HuggingFaceTB/SmolLM2-135M"
+MODEL_REVISION = "93efa2f097d58c2a74874c7e644dbc9b0cee75a2"  # pinned HF commit; the manifest recorded this on 2026-10-09
 LAYER_INDEX = 15
 EXPECTED_SHAPE = (1536, 576)  # (out, in) = (intermediate_size, hidden_size), nn.Linear layout
 
@@ -64,9 +65,12 @@ def check_known_output() -> None:
 
 
 def load_model() -> tuple[AutoTokenizer, AutoModelForCausalLM]:
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-    model = AutoModelForCausalLM.from_pretrained(MODEL_ID, torch_dtype=torch.float32)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, revision=MODEL_REVISION)  # same commit as the weights
+    model = AutoModelForCausalLM.from_pretrained(MODEL_ID, revision=MODEL_REVISION, torch_dtype=torch.float32)
     model.eval()
+    assert getattr(model.config, "_commit_hash", None) == MODEL_REVISION, (
+        f"loaded commit {getattr(model.config, '_commit_hash', None)}, pinned {MODEL_REVISION}"
+    )  # fail here, not later, if the load silently resolved to another commit
     cfg = model.config  # check the dims up front so a different model fails here, not deep in the export
     assert cfg.hidden_size == 576 and cfg.intermediate_size == 1536, (
         f"config dims {cfg.hidden_size}, {cfg.intermediate_size}; spec expects 576, 1536"
