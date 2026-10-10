@@ -12,6 +12,14 @@ Y_MIN = -128
 Y_MAX = 127
 
 
+def raw_acc(q_rows: list[list[int]], x_int: list[int]) -> list[int]:
+    """Raw per-row accumulators for one vector, before requant. The tile test compares these.
+
+    q_rows and x_int have the same meaning as in gemv_int.
+    """
+    return [sum(map(operator.mul, row, x_int)) for row in q_rows]  # exact int dot product per row, no requant
+
+
 def gemv_int(
     q_rows: list[list[int]], x_int: list[int], m_rows: list[int]
 ) -> tuple[list[int], int, int]:
