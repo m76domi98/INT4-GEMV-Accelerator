@@ -1,6 +1,6 @@
 # Stage 2: Processing Element and Array
 
-**Status:** Design (dataflow and interface decided 2026-10-09) · **Weeks:** 2–3 · **Depends on:** Stage 1 (frozen numeric format, golden model)
+**Status:** Done (2026-10-09) · **Weeks:** 2–3 · **Depends on:** Stage 1 (frozen numeric format, golden model)
 **Exit criterion:** Random PE tests and real-layer tile tests pass, bit-exact against the golden model.
 
 ## Goal
@@ -88,8 +88,21 @@ _Logged in [decision-log](../decision-log.md)._
 
 ## Results
 
-_Filled at exit._
+Exit criterion met: random PE tests and real-layer tile tests pass, bit-exact against the golden model. Run under WSL, Icarus 14.0, cocotb 1.9.2.
+
+- **PE** (`make test-pe`): 84 of 84 pass. That covers 80 corner cases (the 5 × 16 grid of `x` and `w`), the worst-case accumulator at ±585,216 over K = 576, 200 seeded random dot products, and the idle-hold check.
+- **Tile** (`make test-tile`, TILE_ROWS = 4, K = 576): 3 of 3 pass.
+  - Random: 20 runs, bit-exact on every row.
+  - Done and hold: `done` is high for exactly one cycle after the Kth term, and `acc` holds after it.
+  - Real layer: rows 0–3 of `q_pc` on all 118 calibration vectors from the export, bit-exact.
+- **Smoke** (`make test`): still passes with the new modules in `rtl/`.
+- **Timing:** one term per cycle, no pipeline stages. A K-term dot product takes K cycles, and `done` lands one cycle after the last term. The per-token cycle count for the full layer is Stage 7's job.
+
+Test-first record: the red runs failed for three reasons: the RTL did not exist yet, a cocotb decorator error, and then a timescale error (see Surprises). The green run came after the RTL was written.
 
 ## Surprises
 
-_Filled as they happen._
+- **Command-line `COMPILE_ARGS` drops the timescale.** Passing `COMPILE_ARGS=...` on the `make` command line replaces cocotb's own compile args, including the `-f cmds.f` that sets the timescale. The build then failed with `Unable to accurately represent 10(ns)`. Fix: pass the tile parameters as an environment variable. Makefile `+=` appends to it, so cocotb's args survive.
+- **cocotb 1.9.2 has no `name=` on `@cocotb.test`.** The first version of the corner-test factory used it and failed at import. Setting `__name__` alone also didn't rename the test in the report, because cocotb reads `__qualname__`. The factory now sets both before wrapping.
+- **Stale build directory.** After a failed tile run, the next build failed in the same way. A clean rebuild (removing `sim_build/pe_tile`) passed. I did not pin down what was stale.
+- **Verilator is not supported by `make test-tile` yet.** The `-P` flags are Icarus syntax. Verilator takes parameters with `-G`. The target is untested under `SIM=verilator`, so it is Icarus only for now.
