@@ -53,7 +53,7 @@ Wrap the tile in control and storage so one full layer runs per run. PRD FR5, FR
 - [ ] Requantization module `rtl/requant.sv`, with saturation flag and per-run counter
 - [ ] Requant unit test against `gemv_int`, on the same vectors: random accumulators, the ±2^20 extremes, and the export's M_r extremes (1,723 and 30,917 for `m_pc`)
 - [ ] Control FSM and memory interfaces `rtl/layer_ctrl.sv`
-- [ ] Full-layer cocotb test on real exported data, bit-exact, element by element, on `x_cal_int` and `x_test_int` (every row, not a sample)
+- [ ] Full-layer cocotb test on real exported data, bit-exact, element by element, every row. Routine target `make test-layer` runs two vectors, one from `x_cal_int` and one from `x_test_int`. The full set of 175 vectors is a separate target, `make test-layer-full`, run once and logged, not part of routine regression. Runtime of each run is logged.
 - [ ] Control `clr` compared with the testbench `clr` on every term
 - [ ] Sticky error test, run against a deliberately broken copy of the control built by a Makefile target. Production RTL has no fault-injection hook. The test checks that `err_sticky` is set, stays set across a good run, and clears only on reset
 - [ ] Reset test: run twice from reset, same output both times, and `err_sticky` cleared by reset
@@ -61,7 +61,7 @@ Wrap the tile in control and storage so one full layer runs per run. PRD FR5, FR
 
 ## Verification
 
-- Full-layer output compared element by element to `gemv_int`, on calibration and held-out vectors.
+- Full-layer output compared element by element to `gemv_int`, every row, on two vectors in `make test-layer`, and on all 175 vectors in `make test-layer-full`.
 - The requant unit test and the full-layer test use the same vectors, so a mismatch in either points to the same place.
 - Missing-`clr` fault injection through the broken-copy target, as above.
 - Two runs from reset give identical outputs and cycle counts.
@@ -75,7 +75,7 @@ _Logged in [decision-log](../decision-log.md) on 2026-10-10._
 - **One-cycle memory hides the bandwidth bottleneck.** This is the central risk of the study. Stage 3 cycle counts are compute only. Stage 7 adds read latency through `READ_LAT`.
 - Weight-load time dominates the total cycle count. This is expected for decode, and it is a result for Stage 6, not a bug.
 - Requant saturation counts can be large on real data (Stage 1 measured 1,084 across the calibration vectors). One run is one vector, so a run's count is at most 1,536. The counter is 11 bits wide to hold that, and it must not wrap.
-- Full-layer simulation time: about 221k compute cycles per vector, so the full-layer test is slow in cocotb. Keep the number of vectors small, and log the time.
+- Full-layer simulation time: about 221k compute cycles per vector, plus about 221k load cycles if weights reload every run. The Stage 2 real-layer test ran about 6.5k cycles per second under Icarus and cocotb. At that rate one full run is roughly 70 s. That figure is an extrapolation, not a measurement. The full 175-vector set would take hours, so it is a separate target. Keep the routine test at two vectors and log the runtime of every run.
 
 ## Results
 
