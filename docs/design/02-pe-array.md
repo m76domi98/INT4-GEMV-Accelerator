@@ -37,6 +37,8 @@ Build one MAC PE, then a small tile of PEs in the chosen dataflow. Verify both b
 - Parameters: `PROD_W = 11`, `ACC_W = 21`.
 - Ports: `clk`, `in_valid`, `clr`, `x` (signed 8-bit, broadcast), `w` (signed 4-bit, this row's own), `acc` (signed `ACC_W`, output).
 
+**Tile (`pe_tile`):** parameters `TILE_ROWS`, `K`, plus `PROD_W` and `ACC_W` passed to each PE. Ports: `clk`, `in_valid`, `clr`, `x`, `w` (flat, row `r` at bits `[4r+3:4r]`), `acc` (flat, row `r` at bits `[ACC_W·r+ACC_W-1 : ACC_W·r]`), `done` (high in the cycle after the Kth valid term, when `acc` is final). The tile counts terms from `clr`, so the driver's `clr` on term 0 is the only framing it needs.
+
 **Tile:** `TILE_ROWS` PEs, one per output row `r0 … r0+TILE_ROWS-1`. Each cycle `i` (0 to K−1):
 - The activation `x_i` is **broadcast** to every PE in the tile.
 - PE `r` takes its own weight `q[r0+r][i]`. These are different weights for each row, read from memory.
@@ -63,9 +65,9 @@ The PRD requires a decision at the end of Week 3 about array size. Decide whethe
 - [x] Golden helper returning raw per-row `acc` (for the tile test)
 - [x] PE RTL with parameterized widths (`PROD_W`, `ACC_W`)
 - [x] PE cocotb test: random vectors and corner cases, bit-exact (84 of 84 under WSL, Icarus)
-- [ ] Tile RTL, parameterized `TILE_ROWS` and `K`
-- [ ] Tile test on random data, bit-exact
-- [ ] Tile test on real-layer data, bit-exact
+- [x] Tile RTL, parameterized `TILE_ROWS` and `K`
+- [x] Tile test on random data, bit-exact (20 runs, K = 576, TILE_ROWS = 4)
+- [x] Tile test on real-layer data, bit-exact (rows 0–3 of `q_pc`, all 118 calibration vectors)
 - [ ] Week 3 gate outcome recorded
 - [ ] Stage 3 (not Stage 2): tile-level check that the control's `clr` matches the testbench's `clr` on every row, so a mismatch fails loudly
 
