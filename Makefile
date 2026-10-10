@@ -24,7 +24,7 @@ test: sim
 test-pe:
 	$(MAKE) sim TOPLEVEL=pe MODULE=test_pe VERILOG_SOURCES=rtl/pe.sv SIM_BUILD=sim_build/pe
 
-# Tile size and K are parameters. Icarus only: -P sets them on the toplevel. Override: make test-tile TILE_ROWS=2
+# Tile size and K are parameters. Icarus only for now: it does not work under Verilator yet (Verilator needs -G, not -P). Override: make test-tile TILE_ROWS=2
 TILE_ROWS ?= 4
 TILE_K ?= 576
 test-tile:
