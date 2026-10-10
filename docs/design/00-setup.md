@@ -1,6 +1,6 @@
 # Stage 0: Setup
 
-**Status:** In progress (fresh-clone check pending) · **Weeks:** Setup (before Week 1) · **Depends on:** PRD Draft v1
+**Status:** Done (2026-10-10) · **Weeks:** Setup (before Week 1) · **Depends on:** PRD Draft v1
 **Exit criterion:** A clean checkout runs the test command and the export command, both with no manual steps.
 
 ## Goal
@@ -36,11 +36,11 @@ docs/           plan, design docs, decision log
 - [x] Pinned dependencies and install steps (README)
 - [x] `make test` runs cocotb with one passing smoke test (passes in WSL, Icarus 14.0, cocotb 1.9.2)
 - [x] Decision log file present ([../decision-log.md](../decision-log.md))
-- [ ] First commit on `main`. Setup is on `feat/stage-0-setup`; merge to `main` after the fresh-clone check.
+- [x] First commit on `main`. Setup was on `feat/stage-0-setup` and merged to `main` through PR #2.
 
 ## Verification
 
-- Fresh clone in a new directory, then install and `make test`. It must pass with no edits. **Not yet done.**
+- Fresh clone in a new directory, then install and `make test`. It must pass with no edits. **Done 2026-10-10** on a clone of `4516160`, in a new Python 3.12 venv built from `requirements.txt`. `make test` passes (1 of 1). `make export` passes and lands on the pinned revision. `make golden` reproduces the tracked log exactly. The manifest differs only in the torch build string (`2.5.1+cu124` on the fresh install, `2.5.1+cpu` in the committed manifest). The model came from the Hugging Face cache on the same account, so a new machine would also download it.
 
 ## Decisions
 
