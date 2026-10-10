@@ -34,6 +34,9 @@ Build one MAC PE, then a small tile of PEs in the chosen dataflow. Verify both b
 
 **PE:** one MAC. Each cycle with `in_valid`, `acc <= acc + x × w`. A `clr` input loads the accumulator with the first product, so the next output row starts clean. `acc` is held until the next `clr`.
 
+- Parameters: `PROD_W = 11`, `ACC_W = 21`.
+- Ports: `clk`, `in_valid`, `clr`, `x` (signed 8-bit, broadcast), `w` (signed 4-bit, this row's own), `acc` (signed `ACC_W`, output).
+
 **Tile:** `TILE_ROWS` PEs, one per output row `r0 … r0+TILE_ROWS-1`. Each cycle `i` (0 to K−1):
 - The activation `x_i` is **broadcast** to every PE in the tile.
 - PE `r` takes its own weight `q[r0+r][i]`. These are different weights for each row, read from memory.
@@ -57,9 +60,9 @@ The PRD requires a decision at the end of Week 3 about array size. Decide whethe
 
 ## Deliverables
 
-- [ ] Golden helper returning raw per-row `acc` (for the tile test)
-- [ ] PE RTL with parameterized widths (`PROD_W`, `ACC_W`)
-- [ ] PE cocotb test: random vectors and corner cases, bit-exact
+- [x] Golden helper returning raw per-row `acc` (for the tile test)
+- [x] PE RTL with parameterized widths (`PROD_W`, `ACC_W`)
+- [x] PE cocotb test: random vectors and corner cases, bit-exact (84 of 84 under WSL, Icarus)
 - [ ] Tile RTL, parameterized `TILE_ROWS` and `K`
 - [ ] Tile test on random data, bit-exact
 - [ ] Tile test on real-layer data, bit-exact
