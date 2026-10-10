@@ -129,3 +129,35 @@ Source: `make golden` on 2026-10-09, log in `results/stage1_golden.log`. Model r
 ## Surprises
 
 - **Saturations on calibration data (2026-10-09).** The Numeric format notes predicted saturation would not trigger on calibrated data. Per-channel saturates 1084 times on calibration and 1266 on test. Per-tensor saturates 2 and 1 times. Probe on the exported arrays: the float output never exceeds 127 LSB on calibration, by construction. The golden output, computed from the quantized activations, overshoots by up to 50 LSB on 447 of 1536 rows. The M_r rounding moves the output by at most 0.52 LSB, so it is not the cause. The cause is activation quantization error. Per-channel sets each `s_out` to its own row's max, so any overshoot clips. Per-tensor has a larger `s_out` on most rows, so it has headroom. The clipped error is still inside the frozen E_r, since E_r has 0 violations. The frozen expectation was wrong and is kept as written. This is logged in the decision log.
+
+## Amendment (2026-10-10): isolated requantization comparison
+
+**Why.** The 2026-10-09 P1 comparison changed two things at once. `quantize_weights` and `requant_params` both took the same `per_tensor` flag, so the per-tensor variant had per-tensor INT4 weights and per-tensor output scales. The P1 result (1.376 vs. 1.933) compared two whole schemes. It did not test requantization. This amendment holds the weights fixed and changes only the output scale. The frozen Results and Predictions above are kept as written. This section replaces them for P1.
+
+**What changed.** The export adds `s_out_iso` and `m_iso`: per-tensor output scale, computed from the per-channel weights (`q_pc`, `s_r_pc`). The chosen design is unchanged, and its numbers match the 2026-10-09 log exactly. The old per-tensor weights are kept as `q_pt` and labeled joint and exploratory. `make golden` now reports three variants. The log is in `results/stage1_golden.log`.
+
+**Isolated results** (same per-channel weights; output scale is the only difference):
+
+| Metric | Per-channel output (chosen) cal | test | Per-tensor output, same weights cal | test |
+| --- | --- | --- | --- | --- |
+| Max abs error | 0.811629 | 1.37576 | 0.800331 | 0.763927 |
+| RMSE | 0.0972273 | 0.104291 | 0.0983944 | 0.0998993 |
+| Requant saturations | 1084 | 1266 | 1 | 0 |
+| E_r violations | 0 | 0 | 0 | 0 |
+| Max \|acc\| | 2518 | 2220 | 2518 | 2220 |
+
+The joint scheme, kept for the record, is unchanged from 2026-10-09: max error 1.7933 (cal) and 1.93254 (test), with 2 and 1 saturations.
+
+**Predictions on the isolated comparison.**
+- **P1: FAIL.** The prediction was that per-channel max error is at most per-tensor max error on the same layer. With weights held fixed, per-channel output max error is 1.37576 and per-tensor is 0.800331. Per-channel is higher on both splits, and the gap is small on calibration (0.812 vs. 0.800). The correlation of the per-row gap with max|w_r| is −0.001, against a predicted −0.321 in the joint run. The gap-vs-|w| part of the prediction is not supported.
+- **RMSE is mixed.** Per-channel is slightly better on calibration (0.0972 vs. 0.0984), and per-tensor is better on test (0.0999 vs. 0.1043). The two schemes are within about 5% of each other, and which one wins depends on the split.
+- **P2: PASS**, and **P3: PASS**, unchanged. Both use the chosen design, whose numbers did not change.
+
+**Cause, partly isolated.** On the test split, 87% of the 100 largest per-channel errors are on outputs that hit the INT8 limit. On calibration, none of the top 100 are saturated. So clipping explains the test-split max error, and it does not explain the calibration gap. The calibration gap is unexplained. Separating the weight and activation contributions to it is Stage 6 error analysis.
+
+**Consequence.** The headroom result is clean: per-tensor output scale removes almost all requant saturations (1 and 0, against 1084 and 1266), because it leaves room above the largest output. On max abs error, the per-channel output scale does not beat per-tensor here. The Stage 4 comparison should report both numbers, and it should not claim per-channel is better on max error.
+
+**Diagnostics (2026-10-10, same export, no change to the chosen design or the frozen P1):**
+- **Calibration gap is within noise.** A bootstrap over the 118 calibration vectors (5000 resamples) gives a 95% interval of −0.025 to +0.011 for the difference in max error (per-channel minus isolated per-tensor). The per-channel max is higher in 69% of resamples. The 0.812 vs. 0.800 gap is not distinguishable from sampling variation.
+- **Headroom on the test split.** A per-channel margin above the calibration max lowers test max error (1.376 at 0% margin, 1.120 at 20%) and removes most clipping. It does not bring per-channel below per-tensor (0.764). The margin does not change calibration max error. So the test-split gap is partly clipping, and the calibration gap is not clipping.
+- **Secondary metric is not pre-registered.** The RMSE and saturation numbers were already in the table above when this section was written. A metric chosen now is post hoc on cal and test. A clean test of a secondary prediction needs vectors that have not been measured yet, for example a new prompt set exported with the same script.
