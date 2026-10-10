@@ -39,7 +39,10 @@ Wrap the tile in control and storage so one full layer runs per run. PRD FR5, FR
 - Product width: 21 bits × 16 bits is about 37 bits. The module uses 40 bits, so the product and the rounding cannot overflow.
 
 **Error handling (sticky).**
-- The control counts terms with its own counter, independent of the tile's. At the Kth accepted term the tile's `done` must be high, and at every other term it must be low. Any mismatch sets `err_sticky`.
+- The control counts accepted terms with its own counter, independent of the tile's.
+- **Timing.** The tile registers `done`, so it goes high one cycle after the Kth accepted term. The control registers its own expectation on the same edge: `expect_done <= in_valid && (count == K-1)`. Each cycle during `COMPUTE`, the check compares `done` with `expect_done`. Both signals are one cycle late, so they line up. Comparing `done` with the raw term count on the same cycle would flag every row set as an error.
+- Gaps are handled by the same rule. `expect_done` is set only by accepted terms, so idle cycles keep it low, as the tile does.
+- Any mismatch sets `err_sticky`.
 - A missing `clr` shows up as a mismatch, because the tile does not restart its count.
 - `err_sticky` stays high until `rst`. It does not clear on the next good row set. A flag that clears can be missed in a results run, and a missing `clr` silently merges two rows, which is the worst failure in this design.
 
