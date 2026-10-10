@@ -1,6 +1,6 @@
 layer model.layers.15.mlp.up_proj revision 93efa2f097d58c2a74874c7e644dbc9b0cee75a2 s_x 0.0180745
 
-== per-channel (chosen) ==
+== per-channel output (chosen) ==
 [cal] vectors=118 rows=1536
   max abs err      0.811629
   RMSE             0.0972273
@@ -18,7 +18,25 @@ layer model.layers.15.mlp.up_proj revision 93efa2f097d58c2a74874c7e644dbc9b0cee7
   max |acc|        2220 (0.002 of 2^20)
   requant sats     1266; activation clips 0
 
-== per-tensor (comparison) ==
+== per-tensor output, same per-channel weights (isolated comparison) ==
+[cal] vectors=118 rows=1536
+  max abs err      0.800331
+  RMSE             0.0983944
+  E_r min/med/max  0.535462 / 3.18925 / 14.2868
+  E_r violations   0 (min margin 0.527216)
+  violations w/ M  0 (M-term max 0.00108203)
+  max |acc|        2518 (0.002 of 2^20)
+  requant sats     1; activation clips 0
+[test] vectors=57 rows=1536
+  max abs err      0.763927
+  RMSE             0.0998993
+  E_r min/med/max  0.534469 / 3.21593 / 13.9909
+  E_r violations   0 (min margin 0.527953)
+  violations w/ M  0 (M-term max 0.001115)
+  max |acc|        2220 (0.002 of 2^20)
+  requant sats     0; activation clips 0
+
+== per-tensor weights and output (joint, exploratory) ==
 [cal] vectors=118 rows=1536
   max abs err      1.7933
   RMSE             0.351412
@@ -37,8 +55,8 @@ layer model.layers.15.mlp.up_proj revision 93efa2f097d58c2a74874c7e644dbc9b0cee7
   requant sats     1; activation clips 0
 
 == Predictions ==
-P1 max abs err: per-channel 1.37576 vs per-tensor 1.93254 -> PASS
-P1 (gap vs max|w_r|, predicted negative): corr = -0.321
+P1 max abs err: per-channel output 1.37576 vs per-tensor output (same weights) 0.800331 -> FAIL
+P1 (gap vs max|w_r|, predicted negative): corr = -0.001
 P2 max err below worst-case E_r on every vector: PASS
 P2 closer to RMS form than worst case (mean |meas-RMS| 0.124115 vs mean |meas-worst| 10.3819): PASS
 P3 real-weight max |acc| on calibration 2518 vs 2^17 = 131072: PASS
