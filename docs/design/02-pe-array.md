@@ -39,7 +39,7 @@ Build one MAC PE, then a small tile of PEs in the chosen dataflow. Verify both b
 
 **Tile (`pe_tile`):** parameters `TILE_ROWS`, `K`, plus `PROD_W` and `ACC_W` passed to each PE. Ports: `clk`, `in_valid`, `clr`, `x`, `w` (flat, row `r` at bits `[4r+3:4r]`), `acc` (flat, row `r` at bits `[ACC_W·r+ACC_W-1 : ACC_W·r]`), `done` (high in the cycle after the Kth valid term, when `acc` is final). The tile counts terms from `clr`, so the driver's `clr` on term 0 is the only framing it needs.
 
-**Driver contract:** every row set must start with `clr = 1` on term 0. The tile does not check this. If term 0 has `clr = 0`, the tile adds into the previous row set's sum and `done` does not fire at the end of that row set. `missing_clr_accumulates_and_drops_done` in `tb/test_tile.py` pins this behavior. Stage 3 control must produce `clr` correctly and add a sticky error flag for a missing `clr`.
+**Driver contract:** idle cycles (`in_valid = 0`) may fall between any two terms of a row set. The tile holds `acc`, keeps `done` low, and counts only accepted terms. `gaps_hold_acc_and_done_follows_accepted_terms` tests this with random gaps and checks that a counter which advances on idle cycles fails it. Every row set must start with `clr = 1` on term 0. The tile does not check this. If term 0 has `clr = 0`, the tile adds into the previous row set's sum and `done` does not fire at the end of that row set. `missing_clr_accumulates_and_drops_done` in `tb/test_tile.py` pins this behavior. Stage 3 control must produce `clr` correctly and add a sticky error flag for a missing `clr`.
 
 **Tile:** `TILE_ROWS` PEs, one per output row `r0 … r0+TILE_ROWS-1`. Each cycle `i` (0 to K−1):
 - The activation `x_i` is **broadcast** to every PE in the tile.
