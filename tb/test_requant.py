@@ -1,6 +1,6 @@
 """Requant tests (Stage 3): rtl/requant.sv against gemv_int's formula, bit-exact.
 
-Port names: clk, clr_count, acc (21-bit signed), m (16-bit signed), y (INT8), sat, sat_count (11 bits).
+Port names: clk, rst, clr_count, acc (21-bit signed), m (16-bit signed), y (INT8), sat, sat_count (11 bits).
 y and sat are combinational from acc and m. sat_count counts clipped outputs and is cleared by clr_count.
 """
 import random
@@ -28,11 +28,14 @@ def expected_requant(acc, m):
 
 
 async def start(dut):
-    """Start the clock, clear the counter, and drive a neutral input."""
+    """Start the clock, pulse reset to clear the counter, and drive a neutral input."""
     cocotb.start_soon(Clock(dut.clk, CLOCK_PERIOD_NS, units="ns").start())
+    dut.rst.value = 1
     dut.clr_count.value = 0
     dut.acc.value = 0
     dut.m.value = 0
+    await RisingEdge(dut.clk)
+    dut.rst.value = 0
     await RisingEdge(dut.clk)
 
 
