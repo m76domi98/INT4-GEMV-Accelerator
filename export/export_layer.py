@@ -166,10 +166,20 @@ def main() -> None:
         "x_cal_int": quantize_acts(x_cal, s_x),
         "x_test_int": quantize_acts(x_test, s_x),
     }
-    for tag, per_tensor in (("pc", False), ("pt", True)):  # pc = per-channel (chosen), pt = per-tensor (comparison)
-        q, s_r = quantize_weights(weight, per_tensor)
-        s_out, m = requant_params(s_x, s_r, y_cal, per_tensor)
-        arrays.update({f"q_{tag}": q, f"s_r_{tag}": s_r, f"s_out_{tag}": s_out, f"m_{tag}": m})
+    # pc = chosen design: per-channel weights and per-channel output scale
+    q_pc, s_r_pc = quantize_weights(weight, per_tensor=False)
+    s_out_pc, m_pc = requant_params(s_x, s_r_pc, y_cal, per_tensor=False)
+    # iso = isolated comparison: the same per-channel weights as pc, but one output scale for the whole tensor.
+    # Only requantization differs from pc, so this is the comparison P1 is about.
+    s_out_iso, m_iso = requant_params(s_x, s_r_pc, y_cal, per_tensor=True)
+    # pt = exploratory joint scheme: per-tensor weights AND per-tensor output. Changes two things at once, kept for the record.
+    q_pt, s_r_pt = quantize_weights(weight, per_tensor=True)
+    s_out_pt, m_pt = requant_params(s_x, s_r_pt, y_cal, per_tensor=True)
+    arrays.update({
+        "q_pc": q_pc, "s_r_pc": s_r_pc, "s_out_pc": s_out_pc, "m_pc": m_pc,
+        "s_out_iso": s_out_iso, "m_iso": m_iso,
+        "q_pt": q_pt, "s_r_pt": s_r_pt, "s_out_pt": s_out_pt, "m_pt": m_pt,
+    })
 
     os.makedirs(OUT_DIR, exist_ok=True)  # first run won't have the out/ folder yet
     np.savez(NPZ_PATH, **arrays)

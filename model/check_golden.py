@@ -65,12 +65,15 @@ def multiplier_term(x_int: np.ndarray, q: np.ndarray, s_x: float, s_r: np.ndarra
     return np.abs(acc) * np.abs(m - m_true)[None, :] / 2**15 * s_out[None, :]  # error grows with |acc| and how far M is off
 
 
-def evaluate(data: np.lib.npyio.NpzFile, tag: str) -> dict:
-    """Golden vs. float for one quantization variant ('pc' or 'pt'), per split."""
-    q = data[f"q_{tag}"]
-    s_r = data[f"s_r_{tag}"]
-    s_out = data[f"s_out_{tag}"]
-    m = data[f"m_{tag}"]
+def evaluate(data: np.lib.npyio.NpzFile, weight_tag: str, out_tag: str) -> dict:
+    """Golden vs. float for one variant, per split. Weights come from weight_tag, output scale and M_r from out_tag.
+
+    Tags: 'pc' per-channel, 'pt' per-tensor (joint with weights), 'iso' per-tensor output scale with pc weights.
+    """
+    q = data[f"q_{weight_tag}"]
+    s_r = data[f"s_r_{weight_tag}"]
+    s_out = data[f"s_out_{out_tag}"]
+    m = data[f"m_{out_tag}"]
     s_x = float(data["s_x"])
     w = data["w_float"]
     w_hat = q * s_r[:, None]  # weights as the golden actually sees them after quantizing
@@ -112,13 +115,14 @@ def print_variant(name: str, res: dict, manifest: dict) -> None:
         print(f"  requant sats     {r['sats']}; activation clips {clip}")
 
 
-def print_predictions(pc: dict, pt: dict) -> None:
+def print_predictions(pc: dict, iso: dict) -> None:
+    """P1 uses the isolated comparison (same weights, only the output scale differs). P2 and P3 use the chosen design."""
     print("\n== Predictions ==")
     err_pc = np.concatenate([pc[s]["err"] for s in SPLITS])
-    err_pt = np.concatenate([pt[s]["err"] for s in SPLITS])
-    print(f"P1 max abs err: per-channel {err_pc.max():.6g} vs per-tensor {err_pt.max():.6g} -> "
-          f"{'PASS' if err_pc.max() <= err_pt.max() else 'FAIL'}")
-    gap_row = err_pt.mean(axis=0) - err_pc.mean(axis=0)  # per row: how much worse per-tensor is than per-channel
+    err_iso = np.concatenate([iso[s]["err"] for s in SPLITS])
+    print(f"P1 max abs err: per-channel output {err_pc.max():.6g} vs per-tensor output (same weights) {err_iso.max():.6g} -> "
+          f"{'PASS' if err_pc.max() <= err_iso.max() else 'FAIL'}")
+    gap_row = err_iso.mean(axis=0) - err_pc.mean(axis=0)  # per row: how much worse per-tensor output is than per-channel
     corr = np.corrcoef(gap_row, pc["w_max"])[0, 1]  # do rows with big weights get more help from per-channel?
     print(f"P1 (gap vs max|w_r|, predicted negative): corr = {corr:.3f}")
 
@@ -143,12 +147,14 @@ def main() -> None:
     data = np.load(NPZ_PATH)  # arrays written by export_layer.py
     with open(MANIFEST_PATH, encoding="utf-8") as handle:
         manifest = json.load(handle)  # scales/clip counts and the model revision
-    pc = evaluate(data, "pc")  # per-channel is the chosen design
-    pt = evaluate(data, "pt")  # per-tensor is the thing we compare against
+    pc = evaluate(data, "pc", "pc")  # chosen design: per-channel weights and output scale
+    iso = evaluate(data, "pc", "iso")  # same weights, per-tensor output scale: only requantization differs
+    joint = evaluate(data, "pt", "pt")  # exploratory: per-tensor weights AND output, changes two things at once
     print(f"layer {manifest['layer']} revision {manifest['model_revision']} s_x {manifest['s_x']:.6g}")
-    print_variant("per-channel (chosen)", pc, manifest)
-    print_variant("per-tensor (comparison)", pt, manifest)
-    print_predictions(pc, pt)
+    print_variant("per-channel output (chosen)", pc, manifest)
+    print_variant("per-tensor output, same per-channel weights (isolated comparison)", iso, manifest)
+    print_variant("per-tensor weights and output (joint, exploratory)", joint, manifest)
+    print_predictions(pc, iso)
 
 
 if __name__ == "__main__":
