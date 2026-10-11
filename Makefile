@@ -48,7 +48,7 @@ test-layer-full:
 # Broken copy: drops clr on term 0 of group 1. The sed must change the copy, or the test would pass on a good design.
 test-layer-sticky:
 	mkdir -p sim_build/broken
-	sed 's/clr_pipe\[0\] <= issue_clr;/clr_pipe[0] <= issue_clr \&\& (grp != 1);/' rtl/layer_ctrl.sv > sim_build/broken/layer_ctrl.sv
+	sed 's/clr_pipe\[0\][ ]*<=[ ]*issue_clr;/clr_pipe[0] <= issue_clr \&\& (grp != 1);/' rtl/layer_ctrl.sv > sim_build/broken/layer_ctrl.sv
 	grep -q 'grp != 1' sim_build/broken/layer_ctrl.sv
 	rm -rf sim_build/layer_sticky
 	$(MAKE) sim TOPLEVEL=layer_ctrl MODULE=test_layer_sticky VERILOG_SOURCES="sim_build/broken/layer_ctrl.sv rtl/pe.sv rtl/pe_tile.sv rtl/requant.sv" SIM_BUILD=sim_build/layer_sticky
@@ -56,7 +56,7 @@ test-layer-sticky:
 # Second mutant: the real control with the sticky flag disabled. The sticky test must fail on its err_sticky assertion.
 test-layer-noflag:
 	mkdir -p sim_build/broken
-	sed 's/err_sticky <= 1.b1;.*/; \/\/ mutant: flag disabled/' rtl/layer_ctrl.sv > sim_build/broken/layer_ctrl_noflag.sv
+	sed 's/err_sticky[ ]*<=[ ]*1.b1;.*/; \/\/ mutant: flag disabled/' rtl/layer_ctrl.sv > sim_build/broken/layer_ctrl_noflag.sv
 	grep -q 'mutant: flag disabled' sim_build/broken/layer_ctrl_noflag.sv
 	rm -rf sim_build/layer_noflag
 	$(MAKE) sim TOPLEVEL=layer_ctrl MODULE=test_layer_sticky VERILOG_SOURCES="sim_build/broken/layer_ctrl_noflag.sv rtl/pe.sv rtl/pe_tile.sv rtl/requant.sv" SIM_BUILD=sim_build/layer_noflag

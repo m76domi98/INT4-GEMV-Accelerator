@@ -80,6 +80,8 @@ Wrap the tile in control and storage so one full layer runs per run. PRD FR5, FR
 - Full-layer output compared element by element to `gemv_int`, every row, on two vectors in `make test-layer`, and on all 175 vectors in `make test-layer-full`.
 - The requant unit test and the full-layer test use the same vectors, so a mismatch in either points to the same place.
 - Missing-`clr` fault injection through the broken-copy target, as above.
+- Mutant targets (`test-layer-sticky`, `test-layer-noflag`) edit `rtl/layer_ctrl.sv` with `sed`. Each has a `grep` guard that fails the target if the edit did not land. The sed patterns allow any spacing around `<=`, but a rename of `clr_pipe`, `issue_clr`, `grp`, or `err_sticky` will break them. Loud failure, but it still needs a fix. Change the sed in the Makefile with the RTL.
+- A mutant must fail for the reason it is written for. A red from a missing or placeholder file does not count. The `noflag` red fails on the `err_sticky` assertion, and that is the check to keep.
 - Two runs from reset give identical outputs and cycle counts.
 
 ## Decisions

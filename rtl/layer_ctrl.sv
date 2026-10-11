@@ -79,7 +79,7 @@ module layer_ctrl #(
         w_pipe[0]     <= w_mem[addr_now];
         x_pipe[0]     <= x_mem[term];
         v_pipe[0]     <= issuing;
-        clr_pipe[0] <= issue_clr;  // the sticky mutant in make test-layer-sticky matches this exact line
+        clr_pipe[0] <= issue_clr;  // make test-layer-sticky edits this line, the sed allows any spacing but keep the names
         first_pipe[0] <= (term == '0);
         for (int i = 1; i < READ_LAT; i++) begin
             w_pipe[i]     <= w_pipe[i-1];
