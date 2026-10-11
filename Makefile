@@ -53,6 +53,14 @@ test-layer-sticky:
 	rm -rf sim_build/layer_sticky
 	$(MAKE) sim TOPLEVEL=layer_ctrl MODULE=test_layer_sticky VERILOG_SOURCES="sim_build/broken/layer_ctrl.sv rtl/pe.sv rtl/pe_tile.sv rtl/requant.sv" SIM_BUILD=sim_build/layer_sticky
 
+# Second mutant: the real control with the sticky flag disabled. The sticky test must fail on its err_sticky assertion.
+test-layer-noflag:
+	mkdir -p sim_build/broken
+	sed 's/err_sticky <= 1.b1;.*/; \/\/ mutant: flag disabled/' rtl/layer_ctrl.sv > sim_build/broken/layer_ctrl_noflag.sv
+	grep -q 'mutant: flag disabled' sim_build/broken/layer_ctrl_noflag.sv
+	rm -rf sim_build/layer_noflag
+	$(MAKE) sim TOPLEVEL=layer_ctrl MODULE=test_layer_sticky VERILOG_SOURCES="sim_build/broken/layer_ctrl_noflag.sv rtl/pe.sv rtl/pe_tile.sv rtl/requant.sv" SIM_BUILD=sim_build/layer_noflag
+
 $(EXPORT_NPZ): export/export_layer.py
 	python3 export/export_layer.py
 
