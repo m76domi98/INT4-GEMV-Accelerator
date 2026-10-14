@@ -63,6 +63,15 @@ Variant B is per-tensor output scale on the same per-channel weights (`m_iso`). 
 - B removes almost all saturations. It does not remove the per-row table, so Stage 5 area should be about equal.
 - `m_iso` range 746..5845, `m_pc` range 1723..30917. Both fit the 16-bit signed `m_mem`.
 
+### Limits of this result
+
+Stage 4 is done, partial in the same way as Stage 3.
+
+- **Error numbers come from the golden model, not the RTL.** Max abs error, RMSE, and saturations are computed by `evaluate()` in Python over all 175 vectors. The RTL ran two vectors per variant (`cal0`, `test0`), bit-exact against `gemv_int`. The other 173 are covered only through the golden model, and the full RTL run (`make test-layer-full`) is still deferred.
+- **Selection is in the testbench.** `VARIANT=pc|iso` chooses which M_r table is loaded. The RTL has no variant parameter or port, because B is a data-only change.
+- **Cycles are one vector per variant**, read from the saved sim logs. They are identical by construction, so they do not separate the variants.
+- **A's error numbers are not new.** They match the Stage 1 log, since both use the same computation.
+
 ## Surprises
 
 - My first plan dropped `m_mem` for B. That was wrong: `M_r = round(s_x * s_r / s_out * 2^15)` keeps the per-row `s_r`, so per-tensor `s_out` does not remove the table. Found in review, logged in the decision log.
