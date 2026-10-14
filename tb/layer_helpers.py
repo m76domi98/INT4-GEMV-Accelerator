@@ -3,6 +3,7 @@
 Not a test module. test_layer.py and test_layer_sticky.py import it, and the cocotb tests live in those files.
 Port names are listed in tb/test_layer.py and in docs/design/03-control-memory.md.
 """
+import os
 import time
 from pathlib import Path
 
@@ -25,6 +26,10 @@ INPUT_NAMES = ("start", "load_done", "rst", "w_we", "m_we", "x_we")
 MEM_PORTS = {"w": ("w_we", "w_addr", "w_wdata"), "m": ("m_we", "m_addr", "m_wdata"), "x": ("x_we", "x_addr", "x_wdata")}
 
 
+M_KEYS = {"pc": "m_pc", "iso": "m_iso"}  # Stage 4 variants: A per-channel output scale, B per-tensor output scale (same weights)
+M_MIN, M_MAX = -(1 << 15), (1 << 15) - 1  # m_mem is 16-bit signed
+
+
 def load_layer():
     """Weights as packed words (row r of group g in bits [4r+3:4r], word index g*K + t), M_r, and both activation splits."""
     data = np.load(NPZ_PATH)
@@ -33,10 +38,14 @@ def load_layer():
     words = np.zeros((GROUPS, K), dtype=np.int64)
     for r in range(TILE_ROWS):
         words |= nibbles[:, r, :] << (4 * r)  # same packing as pe_tile's w bus
+    variant = os.environ.get("VARIANT", "pc")
+    m = data[M_KEYS[variant]].astype(int)
+    assert M_MIN <= m.min() and m.max() <= M_MAX, f"{M_KEYS[variant]} outside 16-bit signed: {m.min()}..{m.max()}"
     return {
+        "variant": variant,
         "q_rows": q.tolist(),
         "words": words.reshape(-1).tolist(),
-        "m": data["m_pc"].astype(int).tolist(),
+        "m": m.tolist(),
         "x_cal": data["x_cal_int"].astype(int).tolist(),
         "x_test": data["x_test_int"].astype(int).tolist(),
     }
