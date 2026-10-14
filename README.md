@@ -34,6 +34,11 @@ make test
 | `make golden` | Runs the golden check and writes `results/stage1_golden.log` | Stage 1 |
 | `make test-pe` | PE cocotb tests: 84 cases, corner grid, worst case, random, hold | Stage 2, Icarus only |
 | `make test-tile` | Tile cocotb tests: random, done and hold, idle gaps between terms, sampled real-layer rows on both splits, missing-`clr` contract. Needs `make export` first | Stage 2, Icarus only |
+| `make test-requant` | Requant cocotb tests against `gemv_int`: formula check, accumulator and M extremes, random, saturation counter | Stage 3, Icarus only |
+| `make test-layer` | Full-layer cocotb test on two vectors (`x_cal_int[0]`, `x_test_int[0]`), every row bit-exact, term stream checked on every term, repeat-from-reset check. Needs `make export` first. About 4 minutes | Stage 3, Icarus only |
+| `make test-layer-sticky` | Sticky-error test against a copy of the control that drops `clr` on group 1 | Stage 3, Icarus only |
+| `make test-layer-noflag` | Mutant check: the sticky test must fail with the error flag disabled | Stage 3, Icarus only |
+| `make test-layer-full` | All 175 vectors, run once and logged | Stage 3, **not run, deferred** (about 4 hours) |
 | `make results` | Regenerates tables, plots, and logs | Stage 6 (not implemented) |
 
 ### Full regression
@@ -46,6 +51,12 @@ make golden
 make test
 make test-pe
 make test-tile
+make test-requant
+make test-layer
+make test-layer-sticky
+make test-layer-noflag
 ```
+
+`make test-layer-full` is not part of the regression. It is deferred until there is hardware that can run it in reasonable time.
 
 `make export` fetches or reads the model at the revision pinned in `export/export_layer.py`. `make test-tile` reads `export/out/layer15_up_proj.npz`, so it needs the export first.

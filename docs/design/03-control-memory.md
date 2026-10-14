@@ -94,7 +94,7 @@ _Logged in [decision-log](../decision-log.md) on 2026-10-10._
 - **One-cycle memory hides the bandwidth bottleneck.** This is the central risk of the study. Stage 3 cycle counts are compute only. Stage 7 adds read latency through `READ_LAT`.
 - Weight-load time dominates the total cycle count. This is expected for decode, and it is a result for Stage 6, not a bug.
 - Requant saturation counts can be large on real data (Stage 1 measured 1,084 across the calibration vectors). One run is one vector, so a run's count is at most 1,536. The counter is 11 bits wide to hold that, and it must not wrap.
-- Full-layer simulation time: about 221k compute cycles per vector, plus about 221k load cycles if weights reload every run. The Stage 2 real-layer test ran about 6.5k cycles per second under Icarus and cocotb. At that rate one full run is roughly 70 s. That figure is an extrapolation, not a measurement. The full 175-vector set would take hours, so it is a separate target. Keep the routine test at two vectors and log the runtime of every run.
+- Full-layer simulation time: measured 223,488 compute cycles and 223,298 load cycles per vector (see Results), about 80 s wall per vector under Icarus and cocotb. The full 175-vector set is about 175 × 80 s, roughly 3.9 h, so it is a separate target. Keep the routine test at two vectors and log the runtime of every run.
 
 ## Results
 

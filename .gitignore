@@ -21,3 +21,6 @@ export/out/*
 results/*
 !results/.gitkeep
 !results/stage1_golden.log
+!results/stage4_variants.md
+!results/stage4_layer_pc.log
+!results/stage4_layer_iso.log

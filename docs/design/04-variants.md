@@ -1,6 +1,6 @@
 # Stage 4: Variants Implemented and Measured
 
-**Status:** Not started · **Weeks:** 5–6 · **Depends on:** Stage 3 (full layer bit-exact)
+**Status:** Done 2026-10-14 · **Weeks:** 5–6 · **Depends on:** Stage 3 (full layer bit-exact)
 **Exit criterion:** Both variants selectable, run on the same testbench and data, with a results table.
 
 ## Goal
@@ -25,10 +25,10 @@ If Variant B is not finished by the end of Week 6, report Variant A fully and de
 
 ## Deliverables
 
-- [ ] Variant selection mechanism
-- [ ] Variant B passes the same bit-exact tests as Variant A (against its own golden model if the arithmetic changes)
-- [ ] Results table: cycles, output error (max abs, RMSE) for both variants
-- [ ] Week 6 gate outcome recorded
+- [x] Variant selection mechanism: `VARIANT=pc|iso` in the testbench picks which M_r table is loaded. The RTL is identical for A and B
+- [x] Variant B passes the same bit-exact tests as Variant A (against its own golden model if the arithmetic changes)
+- [x] Results table: cycles, output error (max abs, RMSE) for both variants
+- [x] Week 6 gate outcome recorded: B finished, no gate action
 
 ## Verification
 
@@ -46,8 +46,32 @@ _Log in [decision-log](../decision-log.md)._
 
 ## Results
 
-_Filled at exit._
+Variant B is per-tensor output scale on the same per-channel weights (`m_iso`). `m_mem` keeps 1,536 per-row entries in both variants, because `M_r` contains the per-row weight scale. Diff list: the loaded M_r table only. Nothing else changed.
+
+`make test-layer` (A) and `make test-layer-iso` (B) both pass: every row bit-exact against `gemv_int` with the variant's own M_r, term stream checked, repeat from reset identical. Logs: `results/stage4_layer_pc.log`, `results/stage4_layer_iso.log`. Table from `model/compare_variants.py`, in `results/stage4_variants.md`. Error and saturations are totals over all vectors in the split (118 cal, 57 test). Cycles are one vector.
+
+| Variant | Split | Compute cycles | Load cycles | Max abs err | RMSE | Saturations |
+| --- | --- | --- | --- | --- | --- | --- |
+| A per-channel | cal | 223488 | 223298 | 0.8116 | 0.0972 | 1084 |
+| A per-channel | test | 223488 | 223298 | 1.3758 | 0.1043 | 1266 |
+| B per-tensor out | cal | 223488 | 223298 | 0.8003 | 0.0984 | 1 |
+| B per-tensor out | test | 223488 | 223298 | 0.7639 | 0.0999 | 0 |
+
+- Cycles are identical, as expected: the schedule does not depend on M_r.
+- B has the lower max error on both splits, but on cal the gap (0.812 vs. 0.800) is within noise (Stage 1 bootstrap). On test the gap is mostly clipping: A saturates 1,266 times, B never.
+- RMSE is mixed: A wins on cal, B on test, within about 5%.
+- B removes almost all saturations. It does not remove the per-row table, so Stage 5 area should be about equal.
+- `m_iso` range 746..5845, `m_pc` range 1723..30917. Both fit the 16-bit signed `m_mem`.
+
+### Limits of this result
+
+Stage 4 is done, partial in the same way as Stage 3.
+
+- **Error numbers come from the golden model, not the RTL.** Max abs error, RMSE, and saturations are computed by `evaluate()` in Python over all 175 vectors. The RTL ran two vectors per variant (`cal0`, `test0`), bit-exact against `gemv_int`. The other 173 are covered only through the golden model, and the full RTL run (`make test-layer-full`) is still deferred.
+- **Selection is in the testbench.** `VARIANT=pc|iso` chooses which M_r table is loaded. The RTL has no variant parameter or port, because B is a data-only change.
+- **Cycles are one vector per variant**, read from the saved sim logs. They are identical by construction, so they do not separate the variants.
+- **A's error numbers are not new.** They match the Stage 1 log, since both use the same computation.
 
 ## Surprises
 
-_Filled as they happen._
+- My first plan dropped `m_mem` for B. That was wrong: `M_r = round(s_x * s_r / s_out * 2^15)` keeps the per-row `s_r`, so per-tensor `s_out` does not remove the table. Found in review, logged in the decision log.

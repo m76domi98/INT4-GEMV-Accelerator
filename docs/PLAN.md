@@ -11,7 +11,7 @@ This file turns the PRD milestones into stages. Each stage has a design doc in [
 | 1 | 1 | Question, model, layer, spec | Golden model within error bound; spec written before RTL | [01-spec-golden](design/01-spec-golden.md) | Done (2026-10-09) |
 | 2 | 2–3 | PE and array | Random and real-layer tests pass on a small tile | [02-pe-array](design/02-pe-array.md) | Done (2026-10-09) |
 | 3 | 4 | Control and memory | Full layer runs in simulation, matches golden model | [03-control-memory](design/03-control-memory.md) | Done 2026-10-11, partial: two of 175 vectors. Full set deferred |
-| 4 | 5–6 | Variants implemented and measured | Results table for both variants | [04-variants](design/04-variants.md) | Not started |
+| 4 | 5–6 | Variants implemented and measured | Results table for both variants | [04-variants](design/04-variants.md) | Done 2026-10-14, partial: RTL checked on two of 175 vectors, error from golden model |
 | 5 | 7 | Synthesis | Area and fmax for both variants | [05-synthesis](design/05-synthesis.md) | Not started |
 | 6 | 8 | Error analysis | Plots and explanations complete | [06-error-analysis](design/06-error-analysis.md) | Not started |
 | 7 | 9 | Cycle model (optional) | Predicted vs. measured cycles | [07-cycle-model](design/07-cycle-model.md) | Not started |

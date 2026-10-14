@@ -1,0 +1,30 @@
+rm -f results.xml
+MODULE=test_layer TESTCASE= TOPLEVEL=layer_ctrl TOPLEVEL_LANG=verilog \
+         /usr/local/bin/vvp -M /home/miche/int4-venv/lib/python3.12/site-packages/cocotb/libs -m libcocotbvpi_icarus   sim_build/layer/sim.vvp  
+     -.--ns INFO     gpi                                ..mbed/gpi_embed.cpp:108  in set_program_name_in_venv        Using Python virtual environment interpreter at /home/miche/int4-venv/bin/python
+     -.--ns INFO     gpi                                ../gpi/GpiCommon.cpp:101  in gpi_print_registered_impl       VPI registered
+     0.00ns INFO     cocotb                             Running on Icarus Verilog version 14.0 (devel)
+     0.00ns INFO     cocotb                             Running tests with cocotb v1.9.2 from /home/miche/int4-venv/lib/python3.12/site-packages/cocotb
+     0.00ns INFO     cocotb                             Seeding Python random module with 1791957575
+     0.00ns INFO     cocotb.regression                  pytest not found, install it to enable better AssertionError messages
+     0.00ns INFO     cocotb.regression                  Found test test_layer.layer_matches_golden
+     0.00ns INFO     cocotb.regression                  Found test test_layer.repeat_from_reset_is_identical
+     0.00ns INFO     cocotb.regression                  running layer_matches_golden (1/2)
+                                                          Every row of every vector in the set equals gemv_int, the saturation count matches, no term or sticky error.
+4469431.00ns INFO     cocotb.layer_ctrl                  cal0: compute 223488 load 223298 sat 0 wall 77.2 s
+8938871.00ns INFO     cocotb.layer_ctrl                  test0: compute 223488 load 223298 sat 0 wall 95.8 s
+8938871.00ns INFO     cocotb.regression                  layer_matches_golden passed
+8938871.00ns INFO     cocotb.regression                  running repeat_from_reset_is_identical (2/2)
+                                                           The first vector, run again from reset, gives the same outputs, saturation count, and cycle counts.
+13408312.00ns INFO     cocotb.regression                  repeat_from_reset_is_identical passed
+13408312.00ns INFO     cocotb.regression                  ***************************************************************************************************
+                                                          ** TEST                                       STATUS  SIM TIME (ns)  REAL TIME (s)  RATIO (ns/s) **
+                                                          ***************************************************************************************************
+                                                          ** test_layer.layer_matches_golden             PASS     8938871.00         173.82      51426.05  **
+                                                          ** test_layer.repeat_from_reset_is_identical   PASS     4469441.00          73.45      60848.54  **
+                                                          ***************************************************************************************************
+                                                          ** TESTS=2 PASS=2 FAIL=0 SKIP=0                        13408312.00         247.99      54067.45  **
+                                                          ***************************************************************************************************
+                                                          
+make[2]: Leaving directory '/mnt/c/src/Applications/INT4-GEMV-Accelerator'
+make[1]: Leaving directory '/mnt/c/src/Applications/INT4-GEMV-Accelerator'
