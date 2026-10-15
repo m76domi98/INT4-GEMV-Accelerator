@@ -26,10 +26,10 @@ Wrap the tile in control and storage so one full layer runs per run. PRD FR5, FR
 - Output buffer: one INT8 vector of 1536 values per run. Read by the testbench after `done`.
 - Reads go through a `READ_LAT`-cycle pipeline. Stage 3 only tests `READ_LAT = 1`. Stage 7 may add latency by changing the parameter, and the control must not need rewriting.
 
-**FSM:** `IDLE → LOAD → COMPUTE → REQUANT → WRITE → DONE`.
+**FSM:** `IDLE → LOAD → COMPUTE → REQUANT → DONE`. (The first draft had a `WRITE` state, dropped in the build, see Deviations.)
 - `LOAD`: weight, scale, and activation writes from the testbench. Counted as load cycles, not compute.
 - `COMPUTE`: for each row group, K terms with `clr = 1` on term 0. The control issues `clr` itself.
-- `REQUANT`: the four tile accumulators go through the requant module, one per tile row. Outputs go to the output buffer.
+- `REQUANT`: the four tile accumulators go through one `requant` instance, one row per cycle (4 cycles per group). Each result is written to the output buffer in the same cycle.
 - `DONE`: a single-cycle `done` pulse, with the output buffer valid.
 
 **Interface of `rtl/layer_ctrl.sv` (as built for the test).**
@@ -40,7 +40,7 @@ Wrap the tile in control and storage so one full layer runs per run. PRD FR5, FR
 - Reads go through a `READ_LAT`-deep pipeline after the address. The tile sees the piped values.
 
 **Deviations from the FSM above, made while writing the test (2026-10-10):**
-- No `WRITE` state. Each group's four results go to the output buffer in `REQUANT`, one row per cycle.
+- No `WRITE` state. Each group's four results go to the output buffer in `REQUANT`, one row per cycle, through a single `requant` instance (not four in parallel).
 - `COMPUTE` issues the K terms of a group, then waits for the control's own `expect_done`, not the tile's `done`. The FSM advances on the control's expectation, so a fault that stops `done` from firing cannot hang the run. The sticky check reports it.
 - Reset does not clear the memories. Every run rewrites every word, and clearing 221k words on reset is wasted simulation time. The run's correctness does not depend on the old contents.
 - `sat_count` is cleared by `start` and by `rst`, not on every idle cycle. Clearing it while idle would wipe the count before the testbench reads it.
