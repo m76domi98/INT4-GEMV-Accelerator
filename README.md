@@ -22,7 +22,7 @@ Scope and requirements: [PRD](PRD%20Decode-Time%20INT4%20GEMV%20Accelerator%20St
 | 7 | Cycle model with read latency | Not started |
 | 8 | Report and demo | Not started |
 
-Everything above is simulation-only. There is no board bring-up.
+This is a stimulation-focused project.
 
 ## Background: what GEMV is, and why decode is different
 
@@ -63,7 +63,7 @@ Both variants store 1,536 `M_r` values. Variant B's values are not the same for 
 
 In the RTL, one requant unit is shared across the output rows: `layer_ctrl.sv` feeds it one row at a time during REQUANT. Its saturation counter is 11 bits and resets at the start of each run. The golden model `gemv_int` is the reference the RTL matches bit-for-bit.
 
-The spec predicted that per-channel would have lower max error than per-tensor. On the isolated comparison, with weights held fixed, that prediction failed. The clipping from zero headroom explains most of the gap on the test split. This is a finding about this data and this design, not a general statement about which scheme is better.
+Something I predicted in the spec was that per-channel would have lower max error than per-tensor. On the isolated comparison, with weights held fixed, that prediction failed. The clipping from zero headroom explains most of the gap on the test split. This is a finding about this data and this design, not a general statement about which scheme is better.
 
 ## Results so far
 
