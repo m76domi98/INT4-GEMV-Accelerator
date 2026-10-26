@@ -2,7 +2,7 @@
 
 A SystemVerilog accelerator for one quantized linear layer of a small open LLM, running single-token decode. Decode turns each token into a matrix-vector product (GEMV), so the work is limited by how fast weights can be read, not by how many multiplies the hardware can do. This project measures how one design choice, the output requantization scheme, changes accuracy, cycles, and area on that workload.
 
-Scope and requirements: [PRD](PRD%20Decode-Time%20INT4%20GEMV%20Accelerator%20Study.md). Stage plan: [docs/PLAN.md](docs/PLAN.md). Decisions and surprises: [docs/decision-log.md](docs/decision-log.md).
+Scope and requirements: [PRD](PRD%20Decode-Time%20INT4%20GEMV%20Accelerator%20Study.md). Stage plan: [docs/PLAN.md](docs/PLAN.md). Decisions and things I didn't expect: [docs/decision-log.md](docs/decision-log.md).
 
 ## Module map
 
