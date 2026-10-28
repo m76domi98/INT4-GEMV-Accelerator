@@ -24,3 +24,7 @@ results/*
 !results/stage4_variants.md
 !results/stage4_layer_pc.log
 !results/stage4_layer_iso.log
+
+# Personal git notes, kept local only
+docs/git-workflow.md
+docs/rtl-design-patterns.md
