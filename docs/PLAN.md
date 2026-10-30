@@ -24,6 +24,10 @@ Two gates can change the plan. Decide them on the date, not later.
 - **Week 3 gate (PRD §13):** if the array does not fit the time budget, shrink to a smaller tile and keep the same dataflow. Record the call in the decision log.
 - **Week 6 gate (PRD §13):** if the second variant is not finished, report the first variant fully and describe the second as planned work.
 
+# Current Module Map (As of Oct 30)
+
+![Module map](img/module_map.svg)
+
 ## Working Agreements
 
 - **Spec before RTL.** The Week 1 spec, including predicted results, is dated and not edited after RTL starts. Changes go in a new dated section.
