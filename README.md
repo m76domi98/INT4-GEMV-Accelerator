@@ -22,7 +22,7 @@ Scope and requirements: [PRD](PRD%20Decode-Time%20INT4%20GEMV%20Accelerator%20St
 | 7 | Cycle model with read latency | Not started |
 | 8 | Report and demo | Not started |
 
-This is a stimulation-focused project.
+This is a simulation-focused project.
 
 ## Background: what GEMV is, and why decode is different
 
